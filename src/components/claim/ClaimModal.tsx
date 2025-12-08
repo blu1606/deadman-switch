@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { unwrapKeyWithPassword, WrappedKeyData, EncryptedData } from '@/utils/crypto';
 import { fetchFromIPFS } from '@/utils/ipfs';
+import { Program, AnchorProvider } from '@coral-xyz/anchor';
 
 interface ClaimModalProps {
     vault: any;
@@ -12,9 +13,11 @@ interface ClaimModalProps {
 }
 
 export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProps) {
-    const { signMessage } = useWallet();
+    const { publicKey, signTransaction, signAllTransactions } = useWallet();
+    const { connection } = useConnection();
+
     const [password, setPassword] = useState('');
-    const [status, setStatus] = useState<'idle' | 'fetching' | 'decrypting' | 'viewing' | 'error'>('idle');
+    const [status, setStatus] = useState<'idle' | 'fetching' | 'decrypting' | 'viewing' | 'closing' | 'error'>('idle');
     const [error, setError] = useState<string | null>(null);
 
     // Decrypted Content State
@@ -23,6 +26,7 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
     const [fileType, setFileType] = useState<string>('');
     const [fileName, setFileName] = useState<string>('');
     const [downloadBlob, setDownloadBlob] = useState<Blob | null>(null);
+    const [vaultClosed, setVaultClosed] = useState(false);
 
     const handleClaim = async () => {
         if (!password) { setError('Please enter password'); return; }
@@ -33,31 +37,22 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
         setMediaUrl(null);
 
         try {
-            // 1. Fetch from IPFS
             const encryptedBlob = await fetchFromIPFS(vault.ipfsCid);
-
             setStatus('decrypting');
 
-            // 2. Parse package
             const packageText = await encryptedBlob.text();
             const pkg = JSON.parse(packageText);
 
             if (pkg.version === 2 && pkg.keyWrapper) {
                 const wrapper: WrappedKeyData = pkg.keyWrapper;
-
-                // 3. Unwrap Key
                 const vaultKey = await unwrapKeyWithPassword(wrapper, password);
-
-                // 4. Decrypt File
                 const encryptedFile: EncryptedData = pkg.encryptedFile;
                 const decryptedBlob = await import('@/utils/crypto').then(m => m.decryptFile(encryptedFile, vaultKey));
 
-                // Set state for viewing
                 setFileType(pkg.metadata.fileType);
                 setFileName(pkg.metadata.fileName);
                 setDownloadBlob(decryptedBlob);
 
-                // Handle display based on type
                 if (pkg.metadata.fileType.startsWith('text/')) {
                     const text = await decryptedBlob.text();
                     setDecryptedText(text);
@@ -68,7 +63,6 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
 
                 setStatus('viewing');
                 onSuccess();
-
             } else {
                 throw new Error('Unsupported vault format.');
             }
@@ -76,6 +70,42 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
             console.error('Claim failed:', err);
             setStatus('error');
             setError(err.message || 'Decryption failed. Wrong password?');
+        }
+    };
+
+    const handleClaimAndClose = async () => {
+        if (!publicKey || !signTransaction || !signAllTransactions) {
+            setError('Wallet not connected');
+            return;
+        }
+
+        setStatus('closing');
+        setError(null);
+
+        try {
+            const provider = new AnchorProvider(
+                connection,
+                { publicKey, signTransaction, signAllTransactions },
+                { commitment: 'confirmed' }
+            );
+
+            const idl = await import('@/idl/deadmans_switch.json');
+            const program = new Program(idl as any, provider);
+
+            await (program.methods as any)
+                .claimAndClose()
+                .accounts({
+                    vault: vault.publicKey,
+                    recipient: publicKey,
+                })
+                .rpc();
+
+            setVaultClosed(true);
+            setStatus('viewing');
+        } catch (err: any) {
+            console.error('Close failed:', err);
+            setError(err.message || 'Failed to close vault');
+            setStatus('viewing'); // Go back to viewing
         }
     };
 
@@ -101,7 +131,7 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
     };
 
     // RENDER CONTENT VIEWER
-    if (status === 'viewing') {
+    if (status === 'viewing' || status === 'closing') {
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
                 <div className="bg-dark-800 rounded-xl max-w-2xl w-full p-6 border border-dark-700 shadow-2xl flex flex-col max-h-[90vh]">
@@ -128,9 +158,32 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                         ) : null}
                     </div>
 
+                    {vaultClosed && (
+                        <div className="bg-green-500/10 border border-green-500/50 rounded-lg p-3 mb-4 text-green-400 text-sm">
+                            ✅ Vault closed! Rent (~0.003 SOL) transferred to your wallet.
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 mb-4 text-red-400 text-sm">
+                            {error}
+                        </div>
+                    )}
+
                     <div className="flex gap-3 mt-auto">
-                        <button onClick={closeViewer} className="btn-secondary flex-1">Close</button>
-                        <button onClick={downloadFile} className="btn-primary flex-1">⬇️ Download File</button>
+                        <button onClick={downloadFile} className="btn-primary flex-1">⬇️ Download</button>
+
+                        {!vaultClosed && (
+                            <button
+                                onClick={handleClaimAndClose}
+                                disabled={status === 'closing'}
+                                className="btn-secondary flex-1 text-yellow-400 border-yellow-500/50 hover:bg-yellow-500/10"
+                            >
+                                {status === 'closing' ? 'Closing...' : '💰 Claim Rent (~0.003 SOL)'}
+                            </button>
+                        )}
+
+                        <button onClick={closeViewer} className="btn-secondary">✕</button>
                     </div>
                 </div>
             </div>
@@ -145,7 +198,7 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
 
                 <div className="mb-6">
                     <p className="text-dark-400 text-sm mb-4">
-                        Enter the vault password to unlock and view the contents immediately.
+                        Enter the vault password to unlock and view the contents.
                     </p>
 
                     <label className="block text-xs font-medium text-dark-300 mb-1">Vault Password</label>

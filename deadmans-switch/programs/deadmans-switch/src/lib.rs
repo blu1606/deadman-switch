@@ -103,7 +103,31 @@ pub mod deadmans_switch {
     /// Close the vault and reclaim rent back to owner.
     /// Only the vault owner can call this instruction.
     pub fn close_vault(_ctx: Context<CloseVault>) -> Result<()> {
-        msg!("Vault closed. Rent reclaimed.");
+        msg!("Vault closed by owner. Rent reclaimed.");
+        Ok(())
+    }
+
+    /// Claim the vault contents and close it.
+    /// Only the recipient can call this, and only after vault is expired.
+    /// Rent is transferred to the recipient as inheritance bonus.
+    pub fn claim_and_close(ctx: Context<ClaimAndClose>) -> Result<()> {
+        let vault = &ctx.accounts.vault;
+        let clock = Clock::get()?;
+
+        // Check if vault is expired (allow claim even if not formally released)
+        let expiry_time = vault
+            .last_check_in
+            .checked_add(vault.time_interval)
+            .ok_or(VaultError::Overflow)?;
+
+        require!(
+            clock.unix_timestamp > expiry_time || vault.is_released,
+            VaultError::NotExpired
+        );
+
+        msg!("Vault claimed and closed by recipient: {}", vault.recipient);
+        msg!("Rent transferred to recipient.");
+
         Ok(())
     }
 }
@@ -158,6 +182,19 @@ pub struct CloseVault<'info> {
 
     #[account(mut)]
     pub owner: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimAndClose<'info> {
+    #[account(
+        mut,
+        close = recipient,
+        has_one = recipient @ VaultError::Unauthorized
+    )]
+    pub vault: Account<'info, Vault>,
+
+    #[account(mut)]
+    pub recipient: Signer<'info>,
 }
 
 // ============================================================================

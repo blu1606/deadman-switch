@@ -8,6 +8,71 @@
   },
   "instructions": [
     {
+      "name": "claim_and_close",
+      "docs": [
+        "Claim the vault contents and close it.",
+        "Only the recipient can call this, and only after vault is expired.",
+        "Rent is transferred to the recipient as inheritance bonus."
+      ],
+      "discriminator": [
+        177,
+        41,
+        244,
+        95,
+        42,
+        114,
+        27,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "recipient",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "vault"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_vault",
+      "docs": [
+        "Close the vault and reclaim rent back to owner.",
+        "Only the vault owner can call this instruction."
+      ],
+      "discriminator": [
+        141,
+        103,
+        17,
+        126,
+        72,
+        75,
+        29,
+        29
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "vault"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize_vault",
       "docs": [
         "Initialize a new vault with dead man's switch functionality.",
