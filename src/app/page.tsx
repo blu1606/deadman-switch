@@ -8,6 +8,8 @@ import { Activity, Lock, ScrollText, Sparkles } from 'lucide-react';
 import ProblemSection from '@/components/landing/ProblemSection';
 import UseCaseGrid from '@/components/landing/UseCaseGrid';
 import FAQSection from '@/components/landing/FAQSection';
+import WhatIfSimulator from '@/components/landing/WhatIfSimulator';
+import TrustBadges from '@/components/landing/TrustBadges';
 
 export default function Home() {
     const { connected } = useWallet();
@@ -42,7 +44,7 @@ export default function Home() {
                                 Secure, decentralized, and eternal.
                             </p>
 
-                            <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="flex flex-col sm:flex-row gap-4 mb-12">
                                 {connected ? (
                                     <>
                                         <Link href="/create" className="btn-primary text-lg px-8 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-primary-900/20 hover:shadow-primary-500/20 transition-all">
@@ -62,6 +64,9 @@ export default function Home() {
                                     </div>
                                 )}
                             </div>
+
+                            <TrustBadges />
+
                         </motion.div>
                     </div>
 
@@ -148,6 +153,9 @@ export default function Home() {
 
             {/* NEW SECTIONS for Phase 8.1 */}
             <ProblemSection />
+
+            <WhatIfSimulator />
+
             <UseCaseGrid />
 
             {/* Stats */}
