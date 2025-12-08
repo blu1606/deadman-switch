@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useOwnerVaults, VaultData } from '@/hooks/useVault';
 import WalletButton from '@/components/wallet/WalletButton';
 import EditVaultModal from '@/components/dashboard/EditVaultModal';
+import DelegateModal from '@/components/dashboard/DelegateModal';
 import { useWallet } from '@solana/wallet-adapter-react';
 import AliveIndicator from '@/components/dashboard/AliveIndicator';
 import VaultHealthShield from '@/components/dashboard/VaultHealthShield';
@@ -18,6 +19,7 @@ export default function DashboardPage() {
     const [pingError, setPingError] = useState<string | null>(null);
     const [pingSuccess, setPingSuccess] = useState<string | null>(null);
     const [editingVault, setEditingVault] = useState<VaultData | null>(null);
+    const [delegatingVault, setDelegatingVault] = useState<VaultData | null>(null);
 
     const handlePing = async (vault: VaultData) => {
         setPingingVault(vault.publicKey.toBase58());
@@ -152,6 +154,13 @@ export default function DashboardPage() {
                                                         />
                                                     </div>
                                                     <button
+                                                        onClick={() => setDelegatingVault(vault)}
+                                                        className="px-4 py-3 rounded-xl border border-dark-600 hover:bg-dark-700 text-dark-400 transition-colors"
+                                                        title="Manage Delegate"
+                                                    >
+                                                        👤
+                                                    </button>
+                                                    <button
                                                         onClick={() => setEditingVault(vault)}
                                                         className="px-4 py-3 rounded-xl border border-dark-600 hover:bg-dark-700 text-dark-400 transition-colors"
                                                         title="Edit Vault Settings"
@@ -202,6 +211,17 @@ export default function DashboardPage() {
                     onClose={() => setEditingVault(null)}
                     onSuccess={() => {
                         setEditingVault(null);
+                        refetch();
+                    }}
+                />
+            )}
+
+            {delegatingVault && (
+                <DelegateModal
+                    vault={delegatingVault}
+                    onClose={() => setDelegatingVault(null)}
+                    onSuccess={() => {
+                        setDelegatingVault(null);
                         refetch();
                     }}
                 />

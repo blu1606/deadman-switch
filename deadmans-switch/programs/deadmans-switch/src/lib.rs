@@ -55,6 +55,7 @@ pub mod deadmans_switch {
         vault.is_released = false;
         vault.vault_seed = seed;
         vault.bump = ctx.bumps.vault;
+        vault.delegate = None; // 6.1: Initialize with no delegate
 
         msg!("Vault initialized for owner: {}", vault.owner);
         msg!("Vault Seed: {}", seed);
@@ -64,16 +65,44 @@ pub mod deadmans_switch {
     }
 
     /// Ping (check-in) to reset the dead man's switch timer.
-    /// Only the vault owner can call this instruction.
+    /// Owner OR delegate can call this instruction (6.1 Frictionless Check-in).
     pub fn ping(ctx: Context<Ping>) -> Result<()> {
         let vault = &mut ctx.accounts.vault;
         let clock = Clock::get()?;
 
         require!(!vault.is_released, VaultError::AlreadyReleased);
 
+        // 6.1: Authorization check - allow owner OR delegate
+        let signer = ctx.accounts.signer.key();
+        let is_owner = signer == vault.owner;
+        let is_delegate = vault.delegate.map_or(false, |d| d == signer);
+        
+        require!(is_owner || is_delegate, VaultError::Unauthorized);
+
         vault.last_check_in = clock.unix_timestamp;
 
-        msg!("Ping successful. Timer reset to: {}", vault.last_check_in);
+        msg!("Ping successful by {}. Timer reset to: {}", 
+            if is_owner { "owner" } else { "delegate" },
+            vault.last_check_in
+        );
+
+        Ok(())
+    }
+
+    /// Set or clear the delegate wallet that can ping on owner's behalf.
+    /// Only the vault owner can call this instruction.
+    /// The delegate can ONLY ping - they cannot update vault settings or close it.
+    pub fn set_delegate(ctx: Context<SetDelegate>, new_delegate: Option<Pubkey>) -> Result<()> {
+        let vault = &mut ctx.accounts.vault;
+
+        require!(!vault.is_released, VaultError::AlreadyReleased);
+
+        vault.delegate = new_delegate;
+
+        match new_delegate {
+            Some(delegate) => msg!("Delegate set to: {}", delegate),
+            None => msg!("Delegate cleared"),
+        }
 
         Ok(())
     }
@@ -179,8 +208,19 @@ pub struct InitializeVault<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// 6.1: Updated Ping accounts - signer can be owner OR delegate
 #[derive(Accounts)]
 pub struct Ping<'info> {
+    #[account(mut)]
+    pub vault: Account<'info, Vault>,
+
+    /// The signer - can be owner or delegate (validated in instruction)
+    pub signer: Signer<'info>,
+}
+
+/// 6.1: New instruction for setting delegate
+#[derive(Accounts)]
+pub struct SetDelegate<'info> {
     #[account(
         mut,
         has_one = owner @ VaultError::Unauthorized
@@ -265,13 +305,17 @@ pub struct Vault {
 
     /// PDA bump seed
     pub bump: u8, // 1 byte
+
+    /// 6.1: Delegated wallet that can only call ping()
+    /// This allows a "hot wallet" to check-in without having full control
+    pub delegate: Option<Pubkey>, // 1 + 32 = 33 bytes
 }
 
 impl Vault {
     /// Calculate the space needed for a Vault account
-    /// Original: 290 bytes
-    /// New: 290 + 8 (seed) = 298 bytes
-    pub const SPACE: usize = 8 + 32 + 32 + (4 + MAX_IPFS_CID_LEN) + (4 + MAX_ENCRYPTED_KEY_LEN) + 8 + 8 + 1 + 8 + 1;
+    /// Original: 298 bytes
+    /// New with delegate: 298 + 33 (Option<Pubkey>) = 331 bytes
+    pub const SPACE: usize = 8 + 32 + 32 + (4 + MAX_IPFS_CID_LEN) + (4 + MAX_ENCRYPTED_KEY_LEN) + 8 + 8 + 1 + 8 + 1 + 33;
 }
 
 // ============================================================================
@@ -280,7 +324,7 @@ impl Vault {
 
 #[error_code]
 pub enum VaultError {
-    #[msg("Only the vault owner can perform this action")]
+    #[msg("Only the vault owner or delegate can perform this action")]
     Unauthorized,
 
     #[msg("Vault timer has not expired yet")]
