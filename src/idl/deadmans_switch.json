@@ -202,6 +202,50 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "update_vault",
+      "docs": [
+        "Update vault settings (recipient and/or interval).",
+        "Only the vault owner can call this, and only if vault is not released."
+      ],
+      "discriminator": [
+        67,
+        229,
+        185,
+        188,
+        226,
+        11,
+        210,
+        60
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "vault"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_recipient",
+          "type": {
+            "option": "pubkey"
+          }
+        },
+        {
+          "name": "new_time_interval",
+          "type": {
+            "option": "i64"
+          }
+        }
+      ]
     }
   ],
   "accounts": [

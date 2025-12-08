@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useOwnerVaults, VaultData } from '@/hooks/useVault';
 import WalletButton from '@/components/wallet/WalletButton';
+import EditVaultModal from '@/components/dashboard/EditVaultModal';
 import { useWallet } from '@solana/wallet-adapter-react';
 
 export default function DashboardPage() {
@@ -12,6 +13,7 @@ export default function DashboardPage() {
     const [pingingVault, setPingingVault] = useState<string | null>(null);
     const [pingError, setPingError] = useState<string | null>(null);
     const [pingSuccess, setPingSuccess] = useState<string | null>(null);
+    const [editingVault, setEditingVault] = useState<VaultData | null>(null);
 
     const handlePing = async (vault: VaultData) => {
         setPingingVault(vault.publicKey.toBase58());
@@ -91,10 +93,10 @@ export default function DashboardPage() {
                                             <p className="text-dark-500 text-xs font-mono">{truncateAddress(key)}</p>
                                         </div>
                                         <span className={`px-2 py-1 rounded text-xs font-bold ${vault.isReleased
-                                                ? 'bg-red-500/20 text-red-400'
-                                                : status.isExpired
-                                                    ? 'bg-yellow-500/20 text-yellow-400'
-                                                    : 'bg-green-500/20 text-green-400'
+                                            ? 'bg-red-500/20 text-red-400'
+                                            : status.isExpired
+                                                ? 'bg-yellow-500/20 text-yellow-400'
+                                                : 'bg-green-500/20 text-green-400'
                                             }`}>
                                             {vault.isReleased ? '🔓 Released' : status.isExpired ? '⚠️ Expired' : '🔒 Active'}
                                         </span>
@@ -111,10 +113,10 @@ export default function DashboardPage() {
                                             <div className="h-2 bg-dark-700 rounded-full overflow-hidden">
                                                 <div
                                                     className={`h-full transition-all ${status.percentageRemaining > 50
-                                                            ? 'bg-green-500'
-                                                            : status.percentageRemaining > 20
-                                                                ? 'bg-yellow-500'
-                                                                : 'bg-red-500'
+                                                        ? 'bg-green-500'
+                                                        : status.percentageRemaining > 20
+                                                            ? 'bg-yellow-500'
+                                                            : 'bg-red-500'
                                                         }`}
                                                     style={{ width: `${Math.max(2, status.percentageRemaining)}%` }}
                                                 />
@@ -140,13 +142,21 @@ export default function DashboardPage() {
                                     )}
 
                                     {!vault.isReleased && (
-                                        <button
-                                            onClick={() => handlePing(vault)}
-                                            disabled={isPinging}
-                                            className={`w-full py-2 rounded-lg text-sm font-medium btn-primary ${isPinging ? 'opacity-50' : ''}`}
-                                        >
-                                            {isPinging ? 'Checking in...' : '🔔 Check In'}
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handlePing(vault)}
+                                                disabled={isPinging}
+                                                className={`flex-1 py-2 rounded-lg text-sm font-medium btn-primary ${isPinging ? 'opacity-50' : ''}`}
+                                            >
+                                                {isPinging ? 'Checking in...' : '🔔 Check In'}
+                                            </button>
+                                            <button
+                                                onClick={() => setEditingVault(vault)}
+                                                className="px-3 py-2 rounded-lg text-sm font-medium btn-secondary"
+                                            >
+                                                ✏️
+                                            </button>
+                                        </div>
                                     )}
 
                                     {vault.isReleased && (
@@ -175,6 +185,17 @@ export default function DashboardPage() {
                     </div>
                 )}
             </div>
+
+            {editingVault && (
+                <EditVaultModal
+                    vault={editingVault}
+                    onClose={() => setEditingVault(null)}
+                    onSuccess={() => {
+                        setEditingVault(null);
+                        refetch();
+                    }}
+                />
+            )}
         </main>
     );
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { unwrapKeyWithPassword, WrappedKeyData, EncryptedData } from '@/utils/crypto';
+import { unwrapKeyWithPassword, unwrapKeyWithWallet, WrappedKeyData, WalletKeyData, EncryptedData } from '@/utils/crypto';
 import { fetchFromIPFS } from '@/utils/ipfs';
 import { Program, AnchorProvider } from '@coral-xyz/anchor';
 
@@ -19,6 +19,7 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
     const [password, setPassword] = useState('');
     const [status, setStatus] = useState<'idle' | 'fetching' | 'decrypting' | 'viewing' | 'closing' | 'error'>('idle');
     const [error, setError] = useState<string | null>(null);
+    const [encryptionMode, setEncryptionMode] = useState<'password' | 'wallet' | null>(null);
 
     // Decrypted Content State
     const [decryptedText, setDecryptedText] = useState<string | null>(null);
@@ -28,8 +29,27 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
     const [downloadBlob, setDownloadBlob] = useState<Blob | null>(null);
     const [vaultClosed, setVaultClosed] = useState(false);
 
+    // Detect encryption mode from on-chain data
+    useEffect(() => {
+        if (vault?.encryptedKey) {
+            if (vault.encryptedKey.startsWith('wallet:')) {
+                setEncryptionMode('wallet');
+            } else {
+                setEncryptionMode('password');
+            }
+        }
+    }, [vault]);
+
     const handleClaim = async () => {
-        if (!password) { setError('Please enter password'); return; }
+        if (encryptionMode === 'password' && !password) {
+            setError('Please enter password');
+            return;
+        }
+
+        if (!publicKey) {
+            setError('Wallet not connected');
+            return;
+        }
 
         setStatus('fetching');
         setError(null);
@@ -43,33 +63,43 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
             const packageText = await encryptedBlob.text();
             const pkg = JSON.parse(packageText);
 
-            if (pkg.version === 2 && pkg.keyWrapper) {
+            let vaultKey;
+
+            // Handle wallet mode (version 3)
+            if (pkg.version === 3 && pkg.mode === 'wallet' && pkg.walletKey) {
+                const walletKeyData: WalletKeyData = pkg.walletKey;
+                vaultKey = await unwrapKeyWithWallet(walletKeyData, publicKey.toBase58());
+            }
+            // Handle password mode (version 2)
+            else if (pkg.version === 2 && pkg.keyWrapper) {
                 const wrapper: WrappedKeyData = pkg.keyWrapper;
-                const vaultKey = await unwrapKeyWithPassword(wrapper, password);
-                const encryptedFile: EncryptedData = pkg.encryptedFile;
-                const decryptedBlob = await import('@/utils/crypto').then(m => m.decryptFile(encryptedFile, vaultKey));
-
-                setFileType(pkg.metadata.fileType);
-                setFileName(pkg.metadata.fileName);
-                setDownloadBlob(decryptedBlob);
-
-                if (pkg.metadata.fileType.startsWith('text/')) {
-                    const text = await decryptedBlob.text();
-                    setDecryptedText(text);
-                } else {
-                    const url = URL.createObjectURL(decryptedBlob);
-                    setMediaUrl(url);
-                }
-
-                setStatus('viewing');
-                onSuccess();
-            } else {
+                vaultKey = await unwrapKeyWithPassword(wrapper, password);
+            }
+            else {
                 throw new Error('Unsupported vault format.');
             }
+
+            const encryptedFile: EncryptedData = pkg.encryptedFile;
+            const decryptedBlob = await import('@/utils/crypto').then(m => m.decryptFile(encryptedFile, vaultKey));
+
+            setFileType(pkg.metadata.fileType);
+            setFileName(pkg.metadata.fileName);
+            setDownloadBlob(decryptedBlob);
+
+            if (pkg.metadata.fileType.startsWith('text/')) {
+                const text = await decryptedBlob.text();
+                setDecryptedText(text);
+            } else {
+                const url = URL.createObjectURL(decryptedBlob);
+                setMediaUrl(url);
+            }
+
+            setStatus('viewing');
+            onSuccess();
         } catch (err: any) {
             console.error('Claim failed:', err);
             setStatus('error');
-            setError(err.message || 'Decryption failed. Wrong password?');
+            setError(err.message || 'Decryption failed. Check your wallet or password.');
         }
     };
 
@@ -105,7 +135,7 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
         } catch (err: any) {
             console.error('Close failed:', err);
             setError(err.message || 'Failed to close vault');
-            setStatus('viewing'); // Go back to viewing
+            setStatus('viewing');
         }
     };
 
@@ -152,7 +182,7 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                                 <audio src={mediaUrl} controls className="w-full mt-10" />
                             ) : (
                                 <div className="text-center py-10 text-dark-400">
-                                    Cannot preview this file type. Please download to view.
+                                    Cannot preview. Please download.
                                 </div>
                             )
                         ) : null}
@@ -160,7 +190,7 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
 
                     {vaultClosed && (
                         <div className="bg-green-500/10 border border-green-500/50 rounded-lg p-3 mb-4 text-green-400 text-sm">
-                            ✅ Vault closed! Rent (~0.003 SOL) transferred to your wallet.
+                            ✅ Vault closed! Rent transferred to your wallet.
                         </div>
                     )}
 
@@ -179,7 +209,7 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                                 disabled={status === 'closing'}
                                 className="btn-secondary flex-1 text-yellow-400 border-yellow-500/50 hover:bg-yellow-500/10"
                             >
-                                {status === 'closing' ? 'Closing...' : '💰 Claim Rent (~0.003 SOL)'}
+                                {status === 'closing' ? 'Closing...' : '💰 Claim Rent'}
                             </button>
                         )}
 
@@ -190,26 +220,37 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
         );
     }
 
-    // RENDER PASSWORD INPUT
+    // RENDER CLAIM INPUT (Password or Auto)
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div className="bg-dark-800 rounded-xl max-w-md w-full p-6 border border-dark-700 shadow-2xl">
                 <h2 className="text-xl font-bold mb-4">Claim Legacy Vault</h2>
 
                 <div className="mb-6">
-                    <p className="text-dark-400 text-sm mb-4">
-                        Enter the vault password to unlock and view the contents.
-                    </p>
-
-                    <label className="block text-xs font-medium text-dark-300 mb-1">Vault Password</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                        placeholder="Enter password..."
-                        disabled={status !== 'idle' && status !== 'error'}
-                    />
+                    {encryptionMode === 'wallet' ? (
+                        <div className="bg-green-500/10 border border-green-500/50 rounded-lg p-4 text-center">
+                            <div className="text-3xl mb-2">🔑</div>
+                            <p className="text-green-400 font-medium">Wallet-Protected Vault</p>
+                            <p className="text-dark-400 text-sm mt-1">
+                                No password needed. Your connected wallet will decrypt automatically.
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            <p className="text-dark-400 text-sm mb-4">
+                                Enter the vault password to unlock.
+                            </p>
+                            <label className="block text-xs font-medium text-dark-300 mb-1">Vault Password</label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                placeholder="Enter password..."
+                                disabled={status !== 'idle' && status !== 'error'}
+                            />
+                        </>
+                    )}
                 </div>
 
                 {error && (
@@ -230,9 +271,11 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                     <button
                         onClick={handleClaim}
                         disabled={status !== 'idle' && status !== 'error'}
-                        className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 btn-primary disabled:opacity-50"
                     >
-                        {status === 'idle' || status === 'error' ? '🔓 Unlock & View' : (
+                        {status === 'idle' || status === 'error' ? (
+                            encryptionMode === 'wallet' ? '🔓 Decrypt with Wallet' : '🔓 Unlock'
+                        ) : (
                             <span className="flex items-center justify-center gap-2">
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 {status === 'fetching' ? 'Downloading...' : 'Decrypting...'}

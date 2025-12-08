@@ -15,6 +15,10 @@ export interface VaultFormData {
     encryptedBlob: Blob | null;
     aesKeyBase64: string;
 
+    // Encryption mode
+    encryptionMode: 'password' | 'wallet';
+    password?: string; // Only for password mode
+
     // Step 2: Recipient
     recipientAddress: string;
     recipientEmail: string;
@@ -39,6 +43,7 @@ export default function CreateVaultPage() {
         file: null,
         encryptedBlob: null,
         aesKeyBase64: '',
+        encryptionMode: 'wallet', // Default to wallet mode (no password needed)
         recipientAddress: '',
         recipientEmail: '',
         timeInterval: 30 * 24 * 60 * 60, // 30 days default

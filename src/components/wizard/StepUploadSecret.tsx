@@ -20,11 +20,12 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
     const [activeTab, setActiveTab] = useState<ContentType>('file');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [encryptionMode, setEncryptionMode] = useState<'wallet' | 'password'>(formData.encryptionMode || 'wallet');
 
     const [isDragging, setIsDragging] = useState(false);
     const [isEncrypting, setIsEncrypting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [encryptionComplete, setEncryptionComplete] = useState(false);
+    const [contentReady, setContentReady] = useState(false);
 
     // Text content
     const [textContent, setTextContent] = useState('');
@@ -45,44 +46,73 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
     const [isVideoRecording, setIsVideoRecording] = useState(false);
     const streamRef = useRef<MediaStream | null>(null);
 
-    const encryptContent = useCallback(async (file: File) => {
-        if (!password) {
-            setError('Please enter a password for your vault.');
+    const prepareAndEncrypt = useCallback(async () => {
+        let fileToProcess: File | null = null;
+
+        if (activeTab === 'file') {
+            fileToProcess = formData.file;
+        } else if (activeTab === 'text') {
+            if (!textContent.trim()) { setError('Please enter some text.'); return; }
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            fileToProcess = new File([blob], 'secret-message.txt', { type: 'text/plain' });
+        } else if (activeTab === 'voice') {
+            if (!audioBlob) { setError('Please record a message.'); return; }
+            fileToProcess = new File([audioBlob], 'voice-message.webm', { type: 'audio/webm' });
+        } else if (activeTab === 'video') {
+            if (!videoBlob) { setError('Please record a video.'); return; }
+            fileToProcess = new File([videoBlob], 'video-message.webm', { type: 'video/webm' });
+        }
+
+        if (!fileToProcess) {
+            setError('Please select/create content first.');
             return;
         }
 
-        if (password !== confirmPassword) {
-            setError('Passwords do not match.');
-            return;
-        }
-
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters.');
-            return;
-        }
-
-        setIsEncrypting(true);
         setError(null);
 
-        try {
-            // Create password protected package
-            const { blob } = await createPasswordProtectedVaultPackage(file, password);
-
+        if (encryptionMode === 'wallet') {
+            // Wallet mode: store file for later encryption (after recipient is set)
             updateFormData({
-                file,
-                encryptedBlob: blob,
-                // We no longer need to store raw key
-                aesKeyBase64: 'password-protected',
+                file: fileToProcess,
+                encryptionMode: 'wallet',
+                encryptedBlob: null, // Will be encrypted in StepConfirm
+                aesKeyBase64: 'wallet-protected',
             });
+            setContentReady(true);
+        } else {
+            // Password mode: encrypt now
+            if (!password) {
+                setError('Please enter a password.');
+                return;
+            }
+            if (password !== confirmPassword) {
+                setError('Passwords do not match.');
+                return;
+            }
+            if (password.length < 6) {
+                setError('Password must be at least 6 characters.');
+                return;
+            }
 
-            setEncryptionComplete(true);
-        } catch (err) {
-            console.error('Encryption failed:', err);
-            setError('Failed to encrypt content. Please try again.');
-        } finally {
-            setIsEncrypting(false);
+            setIsEncrypting(true);
+            try {
+                const { blob } = await createPasswordProtectedVaultPackage(fileToProcess, password);
+                updateFormData({
+                    file: fileToProcess,
+                    encryptedBlob: blob,
+                    encryptionMode: 'password',
+                    password: password,
+                    aesKeyBase64: 'password-protected',
+                });
+                setContentReady(true);
+            } catch (err) {
+                console.error('Encryption failed:', err);
+                setError('Failed to encrypt content.');
+            } finally {
+                setIsEncrypting(false);
+            }
         }
-    }, [password, confirmPassword, updateFormData]);
+    }, [activeTab, formData.file, textContent, audioBlob, videoBlob, encryptionMode, password, confirmPassword, updateFormData]);
 
     // File handling
     const handleFile = useCallback(async (file: File) => {
@@ -92,7 +122,6 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
             return;
         }
         updateFormData({ file });
-        // Don't encrypt immediately, waiting for password
     }, [updateFormData]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
@@ -106,31 +135,6 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
         const file = e.target.files?.[0];
         if (file) handleFile(file);
     }, [handleFile]);
-
-    // Trigger encryption manually
-    const handleEncryptCurrentContent = async () => {
-        let fileToEncrypt: File | null = null;
-
-        if (activeTab === 'file') {
-            fileToEncrypt = formData.file;
-        } else if (activeTab === 'text') {
-            if (!textContent.trim()) { setError('Please enter some text.'); return; }
-            const blob = new Blob([textContent], { type: 'text/plain' });
-            fileToEncrypt = new File([blob], 'secret-message.txt', { type: 'text/plain' });
-        } else if (activeTab === 'voice') {
-            if (!audioBlob) { setError('Please record a message.'); return; }
-            fileToEncrypt = new File([audioBlob], 'voice-message.webm', { type: 'audio/webm' });
-        } else if (activeTab === 'video') {
-            if (!videoBlob) { setError('Please record a video.'); return; }
-            fileToEncrypt = new File([videoBlob], 'video-message.webm', { type: 'video/webm' });
-        }
-
-        if (fileToEncrypt) {
-            await encryptContent(fileToEncrypt);
-        } else {
-            setError('Please select/create content first.');
-        }
-    };
 
     // Voice recording
     const startVoiceRecording = useCallback(async () => {
@@ -187,8 +191,6 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
         }
     }, [isVideoRecording]);
 
-    const canProceed = encryptionComplete && formData.encryptedBlob;
-
     const tabs = [
         { id: 'file' as ContentType, label: '📁 File' },
         { id: 'text' as ContentType, label: '📝 Text' },
@@ -201,12 +203,45 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
             <div>
                 <h2 className="text-xl font-semibold mb-2">Upload & Protect Secret</h2>
                 <p className="text-dark-400 text-sm">
-                    Content is encrypted with your password. We cannot recover it if lost.
+                    Your secret is encrypted locally. We never see your data.
                 </p>
             </div>
 
+            {/* Encryption Mode Toggle */}
+            {!contentReady && (
+                <div className="bg-dark-800 p-4 rounded-xl border border-dark-700">
+                    <h3 className="font-medium text-white mb-3">🔒 Encryption Mode</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => setEncryptionMode('wallet')}
+                            className={`p-3 rounded-lg border text-left transition-all ${encryptionMode === 'wallet'
+                                    ? 'border-primary-500 bg-primary-500/10'
+                                    : 'border-dark-600 hover:border-dark-500'
+                                }`}
+                        >
+                            <div className="font-medium">🔑 Wallet Mode</div>
+                            <div className="text-xs text-dark-400 mt-1">
+                                No password needed. Only recipient wallet can decrypt.
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => setEncryptionMode('password')}
+                            className={`p-3 rounded-lg border text-left transition-all ${encryptionMode === 'password'
+                                    ? 'border-primary-500 bg-primary-500/10'
+                                    : 'border-dark-600 hover:border-dark-500'
+                                }`}
+                        >
+                            <div className="font-medium">🔐 Password Mode</div>
+                            <div className="text-xs text-dark-400 mt-1">
+                                Set a password. Share with recipient separately.
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Content Type Tabs */}
-            {!encryptionComplete && (
+            {!contentReady && (
                 <div className="flex gap-2 p-1 bg-dark-800 rounded-lg">
                     {tabs.map((tab) => (
                         <button
@@ -214,7 +249,6 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
                             onClick={() => {
                                 setActiveTab(tab.id);
                                 setError(null);
-                                setEncryptionComplete(false);
                             }}
                             className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${activeTab === tab.id ? 'bg-primary-600 text-white' : 'text-dark-400 hover:text-white hover:bg-dark-700'}`}
                         >
@@ -224,8 +258,8 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
                 </div>
             )}
 
-            {/* Content Areas - Only show if not complete */}
-            {!encryptionComplete && (
+            {/* Content Areas */}
+            {!contentReady && (
                 <div className="min-h-[200px]">
                     {activeTab === 'file' && (
                         <div
@@ -297,10 +331,10 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
                 </div>
             )}
 
-            {/* Password Protection Section */}
-            {!encryptionComplete && (
+            {/* Password Input (only for password mode) */}
+            {!contentReady && encryptionMode === 'password' && (
                 <div className="bg-dark-800 p-4 rounded-xl border border-dark-700 space-y-4">
-                    <h3 className="font-medium text-white">🔒 Set Vault Password</h3>
+                    <h3 className="font-medium text-white">🔐 Set Vault Password</h3>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label className="block text-xs text-dark-400 mb-1">Password</label>
@@ -324,35 +358,31 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
                         </div>
                     </div>
                     <p className="text-xs text-yellow-500">
-                        ⚠️ Important: You must share this password with your recipient. We cannot reset it.
+                        ⚠️ You must share this password with your recipient separately.
                     </p>
                 </div>
             )}
 
-            {/* Action Buttons */}
-            {!encryptionComplete ? (
+            {/* Action Button */}
+            {!contentReady ? (
                 <button
-                    onClick={handleEncryptCurrentContent}
+                    onClick={prepareAndEncrypt}
                     disabled={isEncrypting}
                     className="btn-primary w-full py-3 text-lg font-bold shadow-lg shadow-primary-500/20"
                 >
-                    {isEncrypting ? 'Encrypting...' : '🔒 Encrypt & Protect'}
+                    {isEncrypting ? 'Encrypting...' : encryptionMode === 'wallet' ? '✓ Continue' : '🔒 Encrypt & Continue'}
                 </button>
             ) : (
                 <div className="bg-green-500/10 border border-green-500/50 rounded-lg p-6 text-center animate-fade-in">
                     <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span className="text-3xl">✓</span>
                     </div>
-                    <h3 className="text-green-400 font-bold text-lg mb-2">Content Protected!</h3>
-                    <p className="text-dark-300 text-sm mb-4">
-                        Your vault is now encrypted with your password.
+                    <h3 className="text-green-400 font-bold text-lg mb-2">Content Ready!</h3>
+                    <p className="text-dark-300 text-sm mb-2">
+                        {encryptionMode === 'wallet'
+                            ? 'File will be encrypted with recipient wallet in next step.'
+                            : 'Your vault is encrypted with your password.'}
                     </p>
-                    <div className="bg-dark-900 rounded p-3 text-left">
-                        <p className="text-xs text-dark-400 mb-1">Password Check:</p>
-                        <p className="font-mono text-sm text-white">
-                            {password.replace(/./g, '•')}
-                        </p>
-                    </div>
                 </div>
             )}
 
@@ -367,8 +397,8 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
             <div className="flex justify-end pt-4">
                 <button
                     onClick={onNext}
-                    disabled={!canProceed}
-                    className={`btn-primary ${!canProceed ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={!contentReady}
+                    className={`btn-primary ${!contentReady ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                     Next: Set Recipient →
                 </button>

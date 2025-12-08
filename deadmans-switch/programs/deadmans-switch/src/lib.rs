@@ -100,6 +100,31 @@ pub mod deadmans_switch {
         Ok(())
     }
 
+    /// Update vault settings (recipient and/or interval).
+    /// Only the vault owner can call this, and only if vault is not released.
+    pub fn update_vault(
+        ctx: Context<UpdateVault>,
+        new_recipient: Option<Pubkey>,
+        new_time_interval: Option<i64>,
+    ) -> Result<()> {
+        let vault = &mut ctx.accounts.vault;
+
+        require!(!vault.is_released, VaultError::AlreadyReleased);
+
+        if let Some(recipient) = new_recipient {
+            vault.recipient = recipient;
+            msg!("Recipient updated to: {}", recipient);
+        }
+
+        if let Some(interval) = new_time_interval {
+            require!(interval > 0, VaultError::InvalidTimeInterval);
+            vault.time_interval = interval;
+            msg!("Time interval updated to: {} seconds", interval);
+        }
+
+        Ok(())
+    }
+
     /// Close the vault and reclaim rent back to owner.
     /// Only the vault owner can call this instruction.
     pub fn close_vault(_ctx: Context<CloseVault>) -> Result<()> {
@@ -169,6 +194,17 @@ pub struct Ping<'info> {
 pub struct TriggerRelease<'info> {
     #[account(mut)]
     pub vault: Account<'info, Vault>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateVault<'info> {
+    #[account(
+        mut,
+        has_one = owner @ VaultError::Unauthorized
+    )]
+    pub vault: Account<'info, Vault>,
+
+    pub owner: Signer<'info>,
 }
 
 #[derive(Accounts)]

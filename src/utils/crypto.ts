@@ -15,9 +15,19 @@ export interface WrappedKeyData {
     iv: string; // base64
 }
 
+// Wallet-mode key data (no password needed)
+export interface WalletKeyData {
+    wrappedKey: string; // base64
+    iv: string; // base64
+    recipientPubkey: string; // base58
+    vaultSeed: string; // string representation of seed
+}
+
 export interface EncryptedVaultData {
     encryptedFile: EncryptedData;
-    keyWrapper: WrappedKeyData; // Password-protected key
+    keyWrapper?: WrappedKeyData; // Password-protected key (mode: password)
+    walletKey?: WalletKeyData; // Wallet-derived key (mode: wallet)
+    mode: 'password' | 'wallet';
     originalFileName: string;
     originalFileType: string;
 }
@@ -250,6 +260,133 @@ export async function createPasswordProtectedVaultPackage(
         metadata,
         encryptedFile,
         keyWrapper, // Replaces raw key export
+    };
+
+    const blob = new Blob([JSON.stringify(package_)], {
+        type: 'application/json',
+    });
+
+    return { blob };
+}
+
+// ============================================================================
+// WALLET-MODE ENCRYPTION (No password required)
+// ============================================================================
+
+/**
+ * Derive deterministic key from recipient pubkey + vault seed.
+ * This allows encryption that only the correct recipient wallet can decrypt.
+ */
+export async function deriveRecipientKey(
+    recipientPubkey: string,
+    vaultSeed: string
+): Promise<CryptoKey> {
+    const combined = `DEADMAN_SWITCH_V1:${recipientPubkey}:${vaultSeed}`;
+    const encoder = new TextEncoder();
+
+    const keyMaterial = await crypto.subtle.digest(
+        'SHA-256',
+        encoder.encode(combined).buffer as ArrayBuffer
+    );
+
+    return await crypto.subtle.importKey(
+        'raw',
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['wrapKey', 'unwrapKey']
+    );
+}
+
+/**
+ * Wrap AES key using wallet-derived key
+ */
+export async function wrapKeyWithWallet(
+    vaultKey: CryptoKey,
+    recipientPubkey: string,
+    vaultSeed: string
+): Promise<WalletKeyData> {
+    const wrapperKey = await deriveRecipientKey(recipientPubkey, vaultSeed);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const wrappedKeyBuffer = await crypto.subtle.wrapKey(
+        'raw',
+        vaultKey,
+        wrapperKey,
+        { name: 'AES-GCM', iv: iv.buffer as ArrayBuffer }
+    );
+
+    return {
+        wrappedKey: arrayBufferToBase64(wrappedKeyBuffer),
+        iv: arrayBufferToBase64(iv.buffer as ArrayBuffer),
+        recipientPubkey,
+        vaultSeed,
+    };
+}
+
+/**
+ * Unwrap AES key using connected wallet's pubkey
+ */
+export async function unwrapKeyWithWallet(
+    walletKey: WalletKeyData,
+    connectedPubkey: string
+): Promise<CryptoKey> {
+    // Verify the connected wallet matches the recipient
+    if (connectedPubkey !== walletKey.recipientPubkey) {
+        throw new Error('Connected wallet does not match vault recipient');
+    }
+
+    const wrapperKey = await deriveRecipientKey(
+        walletKey.recipientPubkey,
+        walletKey.vaultSeed
+    );
+
+    const iv = base64ToArrayBuffer(walletKey.iv);
+    const wrappedKey = base64ToArrayBuffer(walletKey.wrappedKey);
+
+    return await crypto.subtle.unwrapKey(
+        'raw',
+        wrappedKey,
+        wrapperKey,
+        { name: 'AES-GCM', iv: new Uint8Array(iv) },
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+    );
+}
+
+/**
+ * Create vault package with WALLET-mode encryption (no password)
+ */
+export async function createWalletProtectedVaultPackage(
+    file: File,
+    recipientPubkey: string,
+    vaultSeed: string
+): Promise<{ blob: Blob }> {
+    // 1. Generate random vault key
+    const vaultKey = await generateAESKey();
+
+    // 2. Encrypt file with vault key
+    const encryptedFile = await encryptFile(file, vaultKey);
+
+    // 3. Wrap vault key with wallet-derived key
+    const walletKey = await wrapKeyWithWallet(vaultKey, recipientPubkey, vaultSeed);
+
+    // 4. Create metadata
+    const metadata = {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        encryptedAt: new Date().toISOString(),
+    };
+
+    // 5. Package everything
+    const package_ = {
+        version: 3, // New version for wallet mode
+        mode: 'wallet',
+        metadata,
+        encryptedFile,
+        walletKey,
     };
 
     const blob = new Blob([JSON.stringify(package_)], {

@@ -43,8 +43,13 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
     };
 
     const handleCreateVault = async () => {
-        if (!publicKey || !formData.encryptedBlob || !signTransaction || !signAllTransactions) {
+        if (!publicKey || !signTransaction || !signAllTransactions) {
             setError('Wallet not connected properly');
+            return;
+        }
+
+        if (!formData.file && !formData.encryptedBlob) {
+            setError('No file to encrypt');
             return;
         }
 
@@ -52,40 +57,53 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
         setError(null);
 
         try {
+            let blobToUpload = formData.encryptedBlob;
+            const seed = new BN(Date.now());
+
+            // If wallet mode, encrypt now with recipient pubkey
+            if (formData.encryptionMode === 'wallet' && !formData.encryptedBlob && formData.file) {
+                const { createWalletProtectedVaultPackage } = await import('@/utils/crypto');
+                const result = await createWalletProtectedVaultPackage(
+                    formData.file,
+                    formData.recipientAddress,
+                    seed.toString()
+                );
+                blobToUpload = result.blob;
+            }
+
+            if (!blobToUpload) {
+                throw new Error('Failed to create encrypted package');
+            }
+
             // Step 1: Upload to IPFS
-            const cid = await uploadToIPFSWithRetry(formData.encryptedBlob, 'vault-data.json');
+            const cid = await uploadToIPFSWithRetry(blobToUpload, 'vault-data.json');
             setIpfsCid(cid);
 
             // Step 2: Call smart contract
             setStatus('confirming');
 
-            // Create provider
             const provider = new AnchorProvider(
                 connection,
                 { publicKey, signTransaction, signAllTransactions },
                 { commitment: 'confirmed' }
             );
 
-            // Generate a unique seed for this vault
-            const seed = new BN(Date.now());
-
-            // Get vault PDA
             const [vaultPda] = getVaultPDA(publicKey, seed);
-
-            // Create the instruction manually since we don't have IDL loaded
-            // For now, we'll use a simplified approach
             const recipientPubkey = new PublicKey(formData.recipientAddress);
 
-            // Note: In production, we'd load the IDL and use program.methods
-            // For MVP, we'll construct the transaction using the IDL types
             const idl = await import('@/idl/deadmans_switch.json');
             const program = new Program(idl as any, provider);
 
+            // For wallet mode, store the seed in the encrypted_key field
+            const keyInfo = formData.encryptionMode === 'wallet'
+                ? `wallet:${seed.toString()}`
+                : formData.aesKeyBase64;
+
             const tx = await (program.methods as any)
                 .initializeVault(
-                    seed, // Pass seed as first argument
+                    seed,
                     cid,
-                    formData.aesKeyBase64,
+                    keyInfo,
                     recipientPubkey,
                     new BN(formData.timeInterval)
                 )
@@ -99,7 +117,6 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
             setTxSignature(tx);
             setStatus('success');
 
-            // Wait a moment then redirect
             setTimeout(() => {
                 onSuccess();
             }, 3000);
