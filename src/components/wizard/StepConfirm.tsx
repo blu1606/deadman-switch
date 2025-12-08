@@ -78,7 +78,7 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
 
             // Note: In production, we'd load the IDL and use program.methods
             // For MVP, we'll construct the transaction using the IDL types
-            const idl = await import('@/../../deadmans-switch/target/idl/deadmans_switch.json');
+            const idl = await import('@/idl/deadmans_switch.json');
             const program = new Program(idl as any, provider);
 
             const tx = await (program.methods as any)

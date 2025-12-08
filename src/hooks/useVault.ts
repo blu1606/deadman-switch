@@ -150,7 +150,7 @@ export function useOwnerVaults(): UseOwnerVaultsResult {
             { commitment: 'confirmed' }
         );
 
-        const idl = await import('@/../../deadmans-switch/target/idl/deadmans_switch.json');
+        const idl = await import('@/idl/deadmans_switch.json');
         const program = new Program(idl as any, provider);
 
         const tx = await (program.methods as any)

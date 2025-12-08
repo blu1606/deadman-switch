@@ -1,0 +1,267 @@
+{
+  "address": "HnFEhMS84CabpztHCDdGGN8798NxNse7NtXW4aG17XpB",
+  "metadata": {
+    "name": "deadmans_switch",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "initialize_vault",
+      "docs": [
+        "Initialize a new vault with dead man's switch functionality.",
+        "Creates a PDA owned by the caller to store vault data."
+      ],
+      "discriminator": [
+        48,
+        191,
+        163,
+        44,
+        71,
+        129,
+        63,
+        164
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "arg",
+                "path": "seed"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "seed",
+          "type": "u64"
+        },
+        {
+          "name": "ipfs_cid",
+          "type": "string"
+        },
+        {
+          "name": "encrypted_key",
+          "type": "string"
+        },
+        {
+          "name": "recipient",
+          "type": "pubkey"
+        },
+        {
+          "name": "time_interval",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "ping",
+      "docs": [
+        "Ping (check-in) to reset the dead man's switch timer.",
+        "Only the vault owner can call this instruction."
+      ],
+      "discriminator": [
+        173,
+        0,
+        94,
+        236,
+        73,
+        133,
+        225,
+        153
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "vault"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "trigger_release",
+      "docs": [
+        "Trigger the release of vault contents if the timer has expired.",
+        "Anyone can call this, but it only succeeds if the vault has expired."
+      ],
+      "discriminator": [
+        101,
+        202,
+        88,
+        152,
+        92,
+        22,
+        172,
+        51
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Vault",
+      "discriminator": [
+        211,
+        8,
+        232,
+        43,
+        2,
+        152,
+        117,
+        119
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Only the vault owner can perform this action"
+    },
+    {
+      "code": 6001,
+      "name": "NotExpired",
+      "msg": "Vault timer has not expired yet"
+    },
+    {
+      "code": 6002,
+      "name": "AlreadyReleased",
+      "msg": "Vault has already been released"
+    },
+    {
+      "code": 6003,
+      "name": "IpfsCidTooLong",
+      "msg": "IPFS CID exceeds maximum length"
+    },
+    {
+      "code": 6004,
+      "name": "EncryptedKeyTooLong",
+      "msg": "Encrypted key exceeds maximum length"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidTimeInterval",
+      "msg": "Time interval must be greater than 0"
+    },
+    {
+      "code": 6006,
+      "name": "Overflow",
+      "msg": "Arithmetic overflow occurred"
+    }
+  ],
+  "types": [
+    {
+      "name": "Vault",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "docs": [
+              "The wallet that created this vault"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "docs": [
+              "The wallet that can claim when released"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "ipfs_cid",
+            "docs": [
+              "IPFS CID of the encrypted file"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "encrypted_key",
+            "docs": [
+              "Base64-encoded encrypted AES key"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "time_interval",
+            "docs": [
+              "Check-in interval in seconds"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "last_check_in",
+            "docs": [
+              "Timestamp of last check-in"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "is_released",
+            "docs": [
+              "Whether the vault has been released"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "vault_seed",
+            "docs": [
+              "Unique seed for this vault"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}
