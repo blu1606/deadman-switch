@@ -1,73 +1,74 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import WalletButton from '@/components/wallet/WalletButton';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { MenuBar, NavKey } from '@/components/ui/animated-menu-bar';
 
 export default function Header() {
     const pathname = usePathname();
+    const router = useRouter();
     const { connected } = useWallet();
 
-    const navLinks = [
-        { href: '/', label: 'Home' },
-        { href: '/dashboard', label: 'My Vaults' },
-        { href: '/create', label: 'Create' },
-        { href: '/claim', label: 'Claim' },
-    ];
+    // Map pathname to nav key
+    const getActiveKey = (): NavKey => {
+        if (pathname === '/') return 'home';
+        if (pathname.startsWith('/dashboard')) return 'dashboard';
+        if (pathname.startsWith('/create')) return 'create';
+        if (pathname.startsWith('/claim')) return 'claim';
+        return 'home'; // default
+    };
+
+    const handleNavSelect = (key: NavKey) => {
+        switch (key) {
+            case 'home': router.push('/'); break;
+            case 'dashboard': router.push('/dashboard'); break;
+            case 'create': router.push('/create'); break;
+            case 'claim': router.push('/claim'); break;
+            default: router.push('/');
+        }
+    };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-dark-900/80 backdrop-blur-lg border-b border-dark-700">
-            <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-                {/* Logo */}
-                <Link href="/" className="flex items-center gap-2 group">
-                    <span className="text-2xl">🔐</span>
-                    <span className="font-bold text-lg text-white group-hover:text-primary-400 transition-colors">
-                        Deadman&apos;s Switch
-                    </span>
-                </Link>
+        <header className="fixed top-0 left-0 right-0 z-50 pt-4 px-4 md:px-8 pointer-events-none">
+            <div className="max-w-7xl mx-auto flex items-start justify-between pointer-events-auto">
 
-                {/* Navigation */}
-                <nav className="hidden md:flex items-center gap-1">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${pathname === link.href
-                                    ? 'bg-primary-600/20 text-primary-400'
-                                    : 'text-dark-300 hover:text-white hover:bg-dark-800'
-                                }`}
-                        >
-                            {link.label}
-                        </Link>
-                    ))}
-                </nav>
-
-                {/* Wallet + Mobile Menu */}
-                <div className="flex items-center gap-3">
-                    {connected && (
-                        <span className="hidden sm:block text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded">
-                            ● Connected
+                {/* 1. Logo Section (Left) */}
+                <div className="flex-shrink-0 pt-2">
+                    <Link href="/" className="flex items-center gap-3 group backdrop-blur-md bg-dark-900/50 p-2 pr-4 rounded-xl border border-white/5 hover:border-primary-500/30 transition-all">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-lg shadow-lg shadow-primary-500/20">
+                            💀
+                        </div>
+                        <span className="font-bold text-sm tracking-tight text-white group-hover:text-primary-200 transition-colors hidden sm:block">
+                            Deadman&apos;s Switch
                         </span>
-                    )}
-                    <WalletButton />
-                </div>
-            </div>
-
-            {/* Mobile Navigation */}
-            <div className="md:hidden border-t border-dark-700 px-4 py-2 flex justify-around">
-                {navLinks.map((link) => (
-                    <Link
-                        key={link.href}
-                        href={link.href}
-                        className={`px-3 py-1.5 rounded text-xs font-medium ${pathname === link.href
-                                ? 'bg-primary-600/20 text-primary-400'
-                                : 'text-dark-400'
-                            }`}
-                    >
-                        {link.label}
                     </Link>
-                ))}
+                </div>
+
+                {/* 2. Navigation Section (Center) - Animated Menu Bar */}
+                <div className="flex-grow flex justify-center -ml-12 md:ml-0">
+                    <MenuBar
+                        active={getActiveKey()}
+                        onSelect={handleNavSelect}
+                    />
+                </div>
+
+                {/* 3. Wallet Section (Right) */}
+                <div className="flex-shrink-0 pt-1 flex items-center gap-3">
+                    {connected && (
+                        <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium backdrop-blur-md">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            Connected
+                        </div>
+                    )}
+                    <div className="pointer-events-auto">
+                        <WalletButton />
+                    </div>
+                </div>
             </div>
         </header>
     );
