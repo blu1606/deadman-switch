@@ -215,8 +215,8 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
                         <button
                             onClick={() => setEncryptionMode('wallet')}
                             className={`p-3 rounded-lg border text-left transition-all ${encryptionMode === 'wallet'
-                                    ? 'border-primary-500 bg-primary-500/10'
-                                    : 'border-dark-600 hover:border-dark-500'
+                                ? 'border-primary-500 bg-primary-500/10'
+                                : 'border-dark-600 hover:border-dark-500'
                                 }`}
                         >
                             <div className="font-medium">🔑 Wallet Mode</div>
@@ -227,8 +227,8 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
                         <button
                             onClick={() => setEncryptionMode('password')}
                             className={`p-3 rounded-lg border text-left transition-all ${encryptionMode === 'password'
-                                    ? 'border-primary-500 bg-primary-500/10'
-                                    : 'border-dark-600 hover:border-dark-500'
+                                ? 'border-primary-500 bg-primary-500/10'
+                                : 'border-dark-600 hover:border-dark-500'
                                 }`}
                         >
                             <div className="font-medium">🔐 Password Mode</div>
@@ -299,16 +299,65 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext }) => {
                         <div className="bg-dark-800 rounded-xl p-6 text-center">
                             {audioUrl ? (
                                 <div className="space-y-4">
-                                    <audio src={audioUrl} controls className="mx-auto" />
-                                    <button onClick={() => { setAudioBlob(null); setAudioUrl(null); }} className="btn-secondary">Re-record</button>
+                                    <div className="text-4xl mb-2">🎤</div>
+                                    <audio src={audioUrl} controls className="mx-auto w-full max-w-sm" />
+                                    <p className="text-xs text-dark-400">Your voice message is ready</p>
+                                    <button onClick={() => { setAudioBlob(null); setAudioUrl(null); }} className="btn-secondary">
+                                        🔄 Re-record
+                                    </button>
                                 </div>
                             ) : (
-                                <>
-                                    <button onClick={isRecording ? stopVoiceRecording : startVoiceRecording} className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-primary-600'}`}>
-                                        {isRecording ? '⏹' : '🎤'}
+                                <div className="space-y-4">
+                                    {/* Animated Recording Button */}
+                                    <button
+                                        onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+                                        className={`relative w-20 h-20 rounded-full mx-auto flex items-center justify-center transition-all ${isRecording
+                                                ? 'bg-red-500 shadow-lg shadow-red-500/50'
+                                                : 'bg-gradient-to-br from-primary-500 to-secondary-500 hover:shadow-lg hover:shadow-primary-500/30'
+                                            }`}
+                                    >
+                                        {isRecording ? (
+                                            <div className="w-6 h-6 bg-white rounded-sm animate-pulse" />
+                                        ) : (
+                                            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                                                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                                            </svg>
+                                        )}
+                                        {/* Pulse rings when recording */}
+                                        {isRecording && (
+                                            <>
+                                                <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-30" />
+                                                <span className="absolute inset-0 rounded-full bg-red-400 animate-pulse opacity-20" style={{ animationDelay: '0.5s' }} />
+                                            </>
+                                        )}
                                     </button>
-                                    <p className="mt-2 text-sm text-dark-400">{isRecording ? 'Recording...' : 'Click to record'}</p>
-                                </>
+
+                                    {/* Visualizer bars */}
+                                    <div className="h-8 flex items-center justify-center gap-0.5 mx-auto max-w-xs">
+                                        {[...Array(32)].map((_, i) => (
+                                            <div
+                                                key={i}
+                                                className={`w-1 rounded-full transition-all duration-150 ${isRecording
+                                                        ? 'bg-red-400/80 animate-pulse'
+                                                        : 'bg-dark-600 h-1'
+                                                    }`}
+                                                style={isRecording ? {
+                                                    height: `${12 + Math.random() * 20}px`,
+                                                    animationDelay: `${i * 0.03}s`,
+                                                } : { height: '4px' }}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    <p className="text-sm text-dark-400">
+                                        {isRecording ? (
+                                            <span className="text-red-400 font-medium">● Recording... Click to stop</span>
+                                        ) : (
+                                            'Click to record your voice message'
+                                        )}
+                                    </p>
+                                </div>
                             )}
                         </div>
                     )}

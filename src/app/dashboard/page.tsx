@@ -8,6 +8,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import AliveIndicator from '@/components/dashboard/AliveIndicator';
 import VaultHealthShield from '@/components/dashboard/VaultHealthShield';
 import HoldCheckInButton from '@/components/dashboard/HoldCheckInButton';
+import KeeperSpirit from '@/components/dashboard/KeeperSpirit';
 
 export default function DashboardPage() {
     const { connected } = useWallet();
@@ -105,26 +106,13 @@ export default function DashboardPage() {
 
                                         {/* Left: Visual Indicators */}
                                         <div className="flex flex-col items-center gap-4 min-w-[120px]">
-                                            <div className="relative">
-                                                <VaultHealthShield
-                                                    percentage={status.percentageRemaining}
-                                                    status={status.healthStatus}
-                                                />
-                                                <div className="absolute -top-1 -right-1">
-                                                    <AliveIndicator status={status.healthStatus} isReleased={vault.isReleased} />
-                                                </div>
-                                            </div>
-                                            <div className="text-center">
-                                                <div className={`text-xs font-bold uppercase tracking-widest mb-1 ${vault.isReleased ? 'text-red-400' :
-                                                    status.healthStatus === 'critical' ? 'text-red-400' :
-                                                        status.healthStatus === 'warning' ? 'text-alert-amber' : 'text-safe-green'
-                                                    }`}>
-                                                    {vault.isReleased ? 'RELEASED' : status.healthStatus}
-                                                </div>
-                                                <div className="font-mono text-[10px] text-dark-500">
-                                                    STATUS
-                                                </div>
-                                            </div>
+                                            {/* Keeper Spirit (Tamagotchi) */}
+                                            <KeeperSpirit
+                                                healthStatus={status.healthStatus}
+                                                isReleased={vault.isReleased}
+                                                size="md"
+                                                showStreak={false} // TODO: Enable when ping tracking is implemented
+                                            />
                                         </div>
 
                                         {/* Center: Info */}
