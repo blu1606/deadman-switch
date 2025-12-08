@@ -5,6 +5,9 @@ import { useOwnerVaults, VaultData } from '@/hooks/useVault';
 import WalletButton from '@/components/wallet/WalletButton';
 import EditVaultModal from '@/components/dashboard/EditVaultModal';
 import { useWallet } from '@solana/wallet-adapter-react';
+import AliveIndicator from '@/components/dashboard/AliveIndicator';
+import VaultHealthShield from '@/components/dashboard/VaultHealthShield';
+import HoldCheckInButton from '@/components/dashboard/HoldCheckInButton';
 
 export default function DashboardPage() {
     const { connected } = useWallet();
@@ -57,28 +60,34 @@ export default function DashboardPage() {
     }
 
     return (
-        <main className="min-h-screen pt-20 pb-10 px-4">
-            <div className="max-w-5xl mx-auto">
-                <div className="flex items-center justify-between mb-8">
+        <main className="min-h-screen pt-24 pb-10 px-4">
+            <div className="max-w-4xl mx-auto">
+                <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold">My Vaults</h1>
-                        <p className="text-dark-400">{vaults.length} vault(s) found</p>
+                        <h1 className="text-4xl font-bold mb-2 tracking-tight text-white">COMMAND CENTER</h1>
+                        <div className="flex items-center gap-2 text-dark-400">
+                            <div className={`w-2 h-2 rounded-full ${connected ? 'bg-safe-green' : 'bg-red-500'}`} />
+                            <p className="font-mono text-sm uppercase">{connected ? 'System Online' : 'System Offline'}</p>
+                        </div>
                     </div>
-                    <a href="/create" className="btn-primary">+ Create Vault</a>
+                    {vaults.length > 0 && (
+                        <a href="/create" className="btn-secondary text-xs uppercase tracking-wider items-center flex gap-2">
+                            <span>+ New Protocol</span>
+                        </a>
+                    )}
                 </div>
 
                 {loading ? (
-                    <div className="card text-center py-12">
-                        <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                        <p className="text-dark-400">Loading vaults...</p>
+                    <div className="card text-center py-20 animate-pulse">
+                        <div className="text-2xl font-mono text-dark-500">INITIALIZING...</div>
                     </div>
                 ) : error ? (
-                    <div className="card text-center py-12">
+                    <div className="card border-red-500/30 bg-red-500/5 text-center py-12">
                         <p className="text-red-400 mb-4">{error}</p>
-                        <button onClick={refetch} className="btn-secondary">Try Again</button>
+                        <button onClick={() => refetch()} className="btn-secondary">RETRY CONNECTION</button>
                     </div>
                 ) : vaults.length > 0 ? (
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid gap-8">
                         {vaults.map((vault) => {
                             const status = getStatus(vault);
                             const key = vault.publicKey.toBase58();
@@ -86,102 +95,115 @@ export default function DashboardPage() {
                             const isSuccess = pingSuccess === key;
 
                             return (
-                                <div key={key} className="card hover:border-primary-500/50 transition-all">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h3 className="font-semibold">Vault</h3>
-                                            <p className="text-dark-500 text-xs font-mono">{truncateAddress(key)}</p>
-                                        </div>
-                                        <span className={`px-2 py-1 rounded text-xs font-bold ${vault.isReleased
-                                            ? 'bg-red-500/20 text-red-400'
-                                            : status.isExpired
-                                                ? 'bg-yellow-500/20 text-yellow-400'
-                                                : 'bg-green-500/20 text-green-400'
-                                            }`}>
-                                            {vault.isReleased ? '🔓 Released' : status.isExpired ? '⚠️ Expired' : '🔒 Active'}
-                                        </span>
-                                    </div>
-
-                                    {!vault.isReleased && (
-                                        <div className="mb-4">
-                                            <div className="flex justify-between text-xs mb-1">
-                                                <span className="text-dark-400">Time Remaining</span>
-                                                <span className={status.isExpired ? 'text-red-400' : 'text-white'}>
-                                                    {formatTimeRemaining(status.timeRemaining)}
-                                                </span>
-                                            </div>
-                                            <div className="h-2 bg-dark-700 rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full transition-all ${status.percentageRemaining > 50
-                                                        ? 'bg-green-500'
-                                                        : status.percentageRemaining > 20
-                                                            ? 'bg-yellow-500'
-                                                            : 'bg-red-500'
-                                                        }`}
-                                                    style={{ width: `${Math.max(2, status.percentageRemaining)}%` }}
-                                                />
-                                            </div>
-                                        </div>
+                                <div key={key} className={`card group relative overflow-hidden transition-all duration-300 hover:border-dark-500 ${isSuccess ? 'border-safe-green/50 shadow-safe-green/20' : ''}`}>
+                                    {/* Background Decor */}
+                                    {status.healthStatus === 'critical' && !vault.isReleased && (
+                                        <div className="absolute inset-0 bg-red-500/5 animate-pulse-critical z-0 pointer-events-none" />
                                     )}
 
-                                    <div className="grid grid-cols-2 gap-2 text-xs mb-4">
-                                        <div className="bg-dark-800 rounded p-2">
-                                            <p className="text-dark-500">Recipient</p>
-                                            <p className="font-mono">{truncateAddress(vault.recipient.toBase58())}</p>
+                                    <div className="relative z-10 flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start">
+
+                                        {/* Left: Visual Indicators */}
+                                        <div className="flex flex-col items-center gap-4 min-w-[120px]">
+                                            <div className="relative">
+                                                <VaultHealthShield
+                                                    percentage={status.percentageRemaining}
+                                                    status={status.healthStatus}
+                                                />
+                                                <div className="absolute -top-1 -right-1">
+                                                    <AliveIndicator status={status.healthStatus} isReleased={vault.isReleased} />
+                                                </div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className={`text-xs font-bold uppercase tracking-widest mb-1 ${vault.isReleased ? 'text-red-400' :
+                                                    status.healthStatus === 'critical' ? 'text-red-400' :
+                                                        status.healthStatus === 'warning' ? 'text-alert-amber' : 'text-safe-green'
+                                                    }`}>
+                                                    {vault.isReleased ? 'RELEASED' : status.healthStatus}
+                                                </div>
+                                                <div className="font-mono text-[10px] text-dark-500">
+                                                    STATUS
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="bg-dark-800 rounded p-2">
-                                            <p className="text-dark-500">Interval</p>
-                                            <p>{Math.floor(vault.timeInterval.toNumber() / 86400)} days</p>
+
+                                        {/* Center: Info */}
+                                        <div className="flex-1 w-full text-center md:text-left">
+                                            <div className="flex items-center justify-center md:justify-start gap-4 mb-2">
+                                                <h3 className="text-xl font-bold font-mono tracking-tight text-white">
+                                                    VAULT-{key.slice(0, 4)}
+                                                </h3>
+                                                <span className="bg-dark-800 text-dark-400 text-[10px] px-2 py-0.5 rounded font-mono">
+                                                    {truncateAddress(key)}
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                                <div className="bg-dark-900/50 p-3 rounded-lg border border-dark-700/50">
+                                                    <div className="text-[10px] text-dark-500 uppercase tracking-wider mb-1">Time Remaining</div>
+                                                    <div className={`font-mono text-lg ${status.isExpired ? 'text-red-500' : 'text-white'}`}>
+                                                        {formatTimeRemaining(status.timeRemaining)}
+                                                    </div>
+                                                </div>
+                                                <div className="bg-dark-900/50 p-3 rounded-lg border border-dark-700/50">
+                                                    <div className="text-[10px] text-dark-500 uppercase tracking-wider mb-1">Check-in Interval</div>
+                                                    <div className="font-mono text-lg text-white">
+                                                        {Math.floor(vault.timeInterval.toNumber() / 86400)}d
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Action Area */}
+                                            {!vault.isReleased && (
+                                                <div className="flex flex-col md:flex-row gap-3">
+                                                    <div className="flex-1">
+                                                        <HoldCheckInButton
+                                                            onComplete={() => handlePing(vault)}
+                                                            disabled={isPinging || isSuccess}
+                                                            label={isSuccess ? "CHECK-IN COMPLETE" : undefined}
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setEditingVault(vault)}
+                                                        className="px-4 py-3 rounded-xl border border-dark-600 hover:bg-dark-700 text-dark-400 transition-colors"
+                                                        title="Edit Vault Settings"
+                                                    >
+                                                        ⚙️
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
                                     {isSuccess && (
-                                        <div className="bg-green-500/10 border border-green-500/30 rounded p-2 mb-3 text-green-400 text-xs">
-                                            ✓ Check-in successful!
-                                        </div>
-                                    )}
-
-                                    {!vault.isReleased && (
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => handlePing(vault)}
-                                                disabled={isPinging}
-                                                className={`flex-1 py-2 rounded-lg text-sm font-medium btn-primary ${isPinging ? 'opacity-50' : ''}`}
-                                            >
-                                                {isPinging ? 'Checking in...' : '🔔 Check In'}
-                                            </button>
-                                            <button
-                                                onClick={() => setEditingVault(vault)}
-                                                className="px-3 py-2 rounded-lg text-sm font-medium btn-secondary"
-                                            >
-                                                ✏️
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {vault.isReleased && (
-                                        <div className="text-center text-red-400 text-sm py-2">
-                                            Vault Released
-                                        </div>
+                                        <div className="absolute inset-x-0 bottom-0 h-1 bg-safe-green animate-pulse-fast" />
                                     )}
                                 </div>
                             );
                         })}
                     </div>
                 ) : (
-                    <div className="card text-center py-12">
-                        <div className="w-16 h-16 bg-dark-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <span className="text-3xl">🔒</span>
+                    <div className="text-center py-20 px-4">
+                        <div className="w-24 h-24 bg-dark-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-1 ring-dark-700">
+                            <div className="w-2 h-2 bg-dark-600 rounded-full animate-ping" />
                         </div>
-                        <h3 className="text-xl font-semibold mb-2">No Vaults</h3>
-                        <p className="text-dark-400 mb-6">Create a vault to secure your digital legacy.</p>
-                        <a href="/create" className="btn-primary">Create Vault</a>
+                        <h3 className="text-2xl font-bold mb-3 tracking-tight">System Idle</h3>
+                        <p className="text-dark-400 max-w-md mx-auto mb-8 leading-relaxed">
+                            No active switches detected. Initialize a new protocol to secure your digital legacy.
+                        </p>
+                        <a href="/create" className="btn-primary py-4 px-8 text-lg shadow-2xl shadow-primary-900/20">
+                            INITIALIZE PROTOCOL
+                        </a>
                     </div>
                 )}
 
                 {pingError && (
-                    <div className="fixed bottom-4 right-4 bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
-                        {pingError}
+                    <div className="fixed bottom-6 right-6 max-w-sm bg-dark-900/90 backdrop-blur-md border border-red-500/50 shadow-2xl rounded-xl p-4 flex items-start gap-3 animate-slide-up z-50">
+                        <span className="text-red-500 text-xl">⚠️</span>
+                        <div>
+                            <h4 className="font-bold text-red-400 text-sm mb-1">IGNITION FAILED</h4>
+                            <p className="text-xs text-dark-300">{pingError}</p>
+                        </div>
                     </div>
                 )}
             </div>

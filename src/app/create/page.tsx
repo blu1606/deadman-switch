@@ -134,37 +134,39 @@ export default function CreateVaultPage() {
                 </div>
 
                 {/* Step Content */}
-                <div className="card">
-                    {currentStep === 1 && (
-                        <StepUploadSecret
-                            formData={formData}
-                            updateFormData={updateFormData}
-                            onNext={nextStep}
-                        />
-                    )}
-                    {currentStep === 2 && (
-                        <StepSetRecipient
-                            formData={formData}
-                            updateFormData={updateFormData}
-                            onNext={nextStep}
-                            onBack={prevStep}
-                        />
-                    )}
-                    {currentStep === 3 && (
-                        <StepSetInterval
-                            formData={formData}
-                            updateFormData={updateFormData}
-                            onNext={nextStep}
-                            onBack={prevStep}
-                        />
-                    )}
-                    {currentStep === 4 && (
-                        <StepConfirm
-                            formData={formData}
-                            onBack={prevStep}
-                            onSuccess={handleSuccess}
-                        />
-                    )}
+                <div className="card min-h-[400px]">
+                    <div key={currentStep} className="animate-fade-in">
+                        {currentStep === 1 && (
+                            <StepUploadSecret
+                                formData={formData}
+                                updateFormData={updateFormData}
+                                onNext={nextStep}
+                            />
+                        )}
+                        {currentStep === 2 && (
+                            <StepSetRecipient
+                                formData={formData}
+                                updateFormData={updateFormData}
+                                onNext={nextStep}
+                                onBack={prevStep}
+                            />
+                        )}
+                        {currentStep === 3 && (
+                            <StepSetInterval
+                                formData={formData}
+                                updateFormData={updateFormData}
+                                onNext={nextStep}
+                                onBack={prevStep}
+                            />
+                        )}
+                        {currentStep === 4 && (
+                            <StepConfirm
+                                formData={formData}
+                                onBack={prevStep}
+                                onSuccess={handleSuccess}
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
         </main>

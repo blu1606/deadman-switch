@@ -25,13 +25,14 @@ export interface VaultStatus {
     timeRemaining: number;
     percentageRemaining: number;
     nextCheckInDate: Date;
+    healthStatus: 'healthy' | 'warning' | 'critical';
 }
 
 export interface UseOwnerVaultsResult {
     vaults: VaultData[];
     loading: boolean;
     error: string | null;
-    refetch: () => Promise<void>;
+    refetch: (silent?: boolean) => Promise<void>;
     ping: (vault: VaultData) => Promise<string>;
     getStatus: (vault: VaultData) => VaultStatus;
 }
@@ -52,22 +53,34 @@ export function useOwnerVaults(): UseOwnerVaultsResult {
         const timeRemaining = Math.max(0, expiryTime - now);
         const percentageRemaining = interval > 0 ? (timeRemaining / interval) * 100 : 0;
 
+        let healthStatus: 'healthy' | 'warning' | 'critical' = 'healthy';
+        const daysRemaining = timeRemaining / 86400;
+
+        if (daysRemaining < 1) {
+            healthStatus = 'critical';
+        } else if (daysRemaining < 3) {
+            healthStatus = 'warning';
+        }
+
         return {
             isExpired: now > expiryTime,
             timeRemaining,
             percentageRemaining,
             nextCheckInDate: new Date(expiryTime * 1000),
+            healthStatus,
         };
     }, []);
 
-    const fetchVaults = useCallback(async () => {
+    const fetchVaults = useCallback(async (silent = false) => {
         if (!publicKey) {
             setVaults([]);
             setLoading(false);
             return;
         }
 
-        setLoading(true);
+        if (!silent) {
+            setLoading(true);
+        }
         setError(null);
 
         try {
@@ -161,7 +174,16 @@ export function useOwnerVaults(): UseOwnerVaultsResult {
             })
             .rpc();
 
-        await fetchVaults();
+        // Optimistic update
+        const now = Math.floor(Date.now() / 1000);
+        setVaults(prev => prev.map(v =>
+            v.publicKey.equals(vault.publicKey)
+                ? { ...v, lastCheckIn: new BN(now) }
+                : v
+        ));
+
+        // Background fetch to ensure consistency, but don't block
+        fetchVaults(true).catch(console.error);
 
         return tx;
     }, [publicKey, signTransaction, signAllTransactions, connection, fetchVaults]);

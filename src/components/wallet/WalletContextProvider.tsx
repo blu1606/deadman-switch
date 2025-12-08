@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, ReactNode, useMemo, useState, useEffect } from 'react';
+import { FC, ReactNode, useMemo } from 'react';
 import {
     ConnectionProvider,
     WalletProvider,
@@ -18,7 +18,6 @@ interface Props {
 }
 
 const WalletContextProvider: FC<Props> = ({ children }) => {
-    const [mounted, setMounted] = useState(false);
 
     // Use devnet for MVP
     const endpoint = useMemo(() => clusterApiUrl('devnet'), []);
@@ -31,15 +30,6 @@ const WalletContextProvider: FC<Props> = ({ children }) => {
         ],
         []
     );
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    // Prevent hydration mismatch by not rendering wallet providers until mounted
-    if (!mounted) {
-        return <>{children}</>;
-    }
 
     return (
         <ConnectionProvider endpoint={endpoint}>
