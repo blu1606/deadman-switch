@@ -50,6 +50,10 @@
   - [x] Emergency contacts in settings
 - ~~6.4 Council of Guardians~~ → Deferred to v2
 
+> **⚠️ Phase 6 Review Notes:**
+> - UI/UX changes are subtle (Tamagotchi is small, Reveal is once-off). Needs more visual impact in v2.
+> - **Silent Alarm (Duress Mode):** Implementation is complex in real-world scenarios (hardware triggers, reliable location). Current MVP is "soft" security.
+
 ### Phase 7: Decentralization ~35%
 - [ ] 7.1 Bounty Hunter
   - [ ] Contract: bounty field + permissionless trigger
