@@ -5,13 +5,15 @@ interface HoldCheckInButtonProps {
     disabled?: boolean;
     label?: string;
     loadingLabel?: string;
+    onDuress?: () => void;
 }
 
 export default function HoldCheckInButton({
     onComplete,
     disabled = false,
     label = "HOLD TO CHECK IN",
-    loadingLabel = "VERIFYING..."
+    loadingLabel = "VERIFYING...",
+    onDuress
 }: HoldCheckInButtonProps) {
     const [progress, setProgress] = useState(0);
     const [isHolding, setIsHolding] = useState(false);
@@ -19,32 +21,48 @@ export default function HoldCheckInButton({
 
     // Config
     const HOLD_DURATION = 1500; // ms
+    const DURESS_DURATION = 5000; // ms for silent alarm
     const UPDATE_INTERVAL = 16; // ~60fps
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const progressRef = useRef(0);
+    const isDuressRef = useRef(false);
 
     const startHolding = (e: React.MouseEvent | React.TouchEvent) => {
         if (disabled || isComplete) return;
-        // Prevent default to avoid context menus or text selection
-        // e.preventDefault(); // Sometimes causes issues with click, be careful
 
         setIsHolding(true);
         progressRef.current = 0;
+        isDuressRef.current = false;
         setProgress(0);
 
-        // Haptic feedback start (if available)
+        // Haptic feedback start
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
             navigator.vibrate(50);
         }
 
         intervalRef.current = setInterval(() => {
             progressRef.current += UPDATE_INTERVAL;
+
+            // Visual progress capped at 100% for normal duration
             const newProgress = Math.min(100, (progressRef.current / HOLD_DURATION) * 100);
             setProgress(newProgress);
 
-            if (progressRef.current >= HOLD_DURATION) {
+            // Normal completion logic
+            if (!onDuress && progressRef.current >= HOLD_DURATION) {
                 completeHold();
+                return;
+            }
+
+            // Duress logic: If enabled, we wait for 5s
+            if (onDuress) {
+                // If we passed normal duration, maybe give subtle feedback? 
+                // Currently just staying at 100% visual.
+
+                if (progressRef.current >= DURESS_DURATION) {
+                    isDuressRef.current = true;
+                    completeHold(true); // Trigger duress
+                }
             }
         }, UPDATE_INTERVAL);
     };
@@ -58,9 +76,15 @@ export default function HoldCheckInButton({
             intervalRef.current = null;
         }
 
+        // If duress enabled, check if we held long enough for normal check-in
+        if (onDuress && progressRef.current >= HOLD_DURATION && !isDuressRef.current) {
+            completeHold(false); // Normal check-in on release
+            return;
+        }
+
         // Retract animation
         const retractInterval = setInterval(() => {
-            progressRef.current = Math.max(0, progressRef.current - (UPDATE_INTERVAL * 2)); // Retract faster
+            progressRef.current = Math.max(0, progressRef.current - (UPDATE_INTERVAL * 2));
             const newProgress = (progressRef.current / HOLD_DURATION) * 100;
             setProgress(newProgress);
 
@@ -71,7 +95,7 @@ export default function HoldCheckInButton({
         }, UPDATE_INTERVAL);
     };
 
-    const completeHold = () => {
+    const completeHold = (isDuress = false) => {
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
@@ -82,12 +106,16 @@ export default function HoldCheckInButton({
 
         // Haptic success
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
-            navigator.vibrate([100, 50, 100]);
+            navigator.vibrate(isDuress ? [50, 50, 50, 50, 50] : [100, 50, 100]);
         }
 
-        onComplete();
+        if (isDuress && onDuress) {
+            onDuress();
+        } else {
+            onComplete();
+        }
 
-        // Reset after a delay if needed handled by parent, but we can unlock local state
+        // Reset after a delay
         setTimeout(() => {
             setIsComplete(false);
             setProgress(0);

@@ -39,15 +39,15 @@
   - [ ] Deploy updated contract
 - [x] 6.2 Cinematic Reveal (~70%)
   - [x] RevealSequence, VaultSafe3D
-  - [ ] Typewriter effect
+  - [x] Typewriter effect
 - [x] 6.3 Tamagotchi Vault (~60%) **SIMPLIFIED**
   - [x] KeeperSpirit component
-  - [ ] Integrate Kip into Dashboard (frontend only)
+  - [x] Integrate Kip into Dashboard (frontend only)
   - ~~Dynamic NFT~~ → Deferred to v2
 - [ ] 6.5 Silent Alarm (NEW) 📝 Spec Ready
-  - [ ] Duress detection in HoldCheckInButton
-  - [ ] /api/alert/duress endpoint
-  - [ ] Emergency contacts in settings
+  - [x] Duress detection in HoldCheckInButton
+  - [x] /api/alert/duress endpoint
+  - [x] Emergency contacts in settings
 - ~~6.4 Council of Guardians~~ → Deferred to v2
 
 ### Phase 7: Decentralization ~35%

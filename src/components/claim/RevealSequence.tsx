@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { TypeAnimation } from 'react-type-animation';
 import VaultSafe from './VaultSafe3D';
 
 interface RevealSequenceProps {
@@ -24,7 +25,6 @@ export default function RevealSequence({
     onContinue,
 }: RevealSequenceProps) {
     const [revealState, setRevealState] = useState<RevealState>('locked');
-    const [displayedText, setDisplayedText] = useState('');
     const [showContinue, setShowContinue] = useState(false);
 
     // State transitions
@@ -48,23 +48,7 @@ export default function RevealSequence({
         }
     }, [isDecrypted, revealState, finalMessage]);
 
-    // Typewriter effect for message
-    useEffect(() => {
-        if (revealState === 'message' && finalMessage) {
-            let index = 0;
-            setDisplayedText('');
-            const interval = setInterval(() => {
-                if (index < finalMessage.length) {
-                    setDisplayedText(prev => prev + finalMessage[index]);
-                    index++;
-                } else {
-                    clearInterval(interval);
-                    setTimeout(() => setShowContinue(true), 500);
-                }
-            }, 30);
-            return () => clearInterval(interval);
-        }
-    }, [revealState, finalMessage]);
+    // Custom typewriter effect removed in favor of react-type-animation component
 
     const handleContinue = () => {
         setRevealState('assets');
@@ -72,7 +56,6 @@ export default function RevealSequence({
     };
 
     const skipToAssets = () => {
-        setDisplayedText(finalMessage || '');
         setShowContinue(true);
     };
 
@@ -142,17 +125,19 @@ export default function RevealSequence({
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.6 }}
-                            className="bg-dark-900/80 backdrop-blur-md border border-dark-600 rounded-2xl p-8 mb-6 min-h-[150px] cursor-pointer"
+                            className="bg-dark-900/80 backdrop-blur-md border border-dark-600 rounded-2xl p-8 mb-6 min-h-[150px] cursor-pointer text-left"
                             onClick={skipToAssets}
                         >
-                            <p className="text-lg text-white font-light leading-relaxed whitespace-pre-wrap">
-                                {displayedText}
-                                <motion.span
-                                    animate={{ opacity: [1, 0] }}
-                                    transition={{ duration: 0.8, repeat: Infinity }}
-                                    className="inline-block w-0.5 h-5 bg-primary-400 ml-1 align-middle"
-                                />
-                            </p>
+                            <TypeAnimation
+                                sequence={[
+                                    finalMessage || '',
+                                    () => setShowContinue(true),
+                                ]}
+                                wrapper="div"
+                                cursor={true}
+                                speed={60}
+                                style={{ fontSize: '1.125rem', color: 'white', fontWeight: 300, lineHeight: 1.625, whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}
+                            />
                         </motion.div>
 
                         {/* Continue Button */}

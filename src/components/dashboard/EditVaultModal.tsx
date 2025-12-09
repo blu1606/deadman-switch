@@ -33,6 +33,21 @@ const EditVaultModal: FC<EditVaultModalProps> = ({ vault, onClose, onSuccess }) 
     const [status, setStatus] = useState<'idle' | 'updating' | 'success' | 'error'>('idle');
     const [error, setError] = useState<string | null>(null);
 
+    // Duress Settings (Local Storage for MVP)
+    const [duressEnabled, setDuressEnabled] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem(`duress_enabled_${vault.publicKey.toBase58()}`);
+            return saved === 'true';
+        }
+        return false;
+    });
+    const [emergencyEmail, setEmergencyEmail] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem(`duress_email_${vault.publicKey.toBase58()}`) || '';
+        }
+        return '';
+    });
+
     const handleUpdate = async () => {
         if (!publicKey || !signTransaction || !signAllTransactions) {
             setError('Wallet not connected');
@@ -75,6 +90,12 @@ const EditVaultModal: FC<EditVaultModalProps> = ({ vault, onClose, onSuccess }) 
                     owner: publicKey,
                 })
                 .rpc();
+
+            // Save Duress Settings (Local Only)
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(`duress_enabled_${vault.publicKey.toBase58()}`, String(duressEnabled));
+                localStorage.setItem(`duress_email_${vault.publicKey.toBase58()}`, emergencyEmail);
+            }
 
             setStatus('success');
             setTimeout(() => {
@@ -140,6 +161,40 @@ const EditVaultModal: FC<EditVaultModalProps> = ({ vault, onClose, onSuccess }) 
                                 {error}
                             </div>
                         )}
+
+                        <div className="border-t border-dark-700 pt-6 mb-6">
+                            <h3 className="text-sm font-bold text-dark-300 mb-4 uppercase tracking-wider">Silent Alarm (Duress Mode)</h3>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm text-white">Enable Duress Mode</label>
+                                    <button
+                                        onClick={() => setDuressEnabled(!duressEnabled)}
+                                        className={`w-12 h-6 rounded-full transition-colors relative ${duressEnabled ? 'bg-red-500' : 'bg-dark-600'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${duressEnabled ? 'left-7' : 'left-1'}`} />
+                                    </button>
+                                </div>
+
+                                {duressEnabled && (
+                                    <div className="animate-fade-in">
+                                        <label className="block text-xs font-medium text-dark-300 mb-1">
+                                            Emergency Contact (Email)
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={emergencyEmail}
+                                            onChange={(e) => setEmergencyEmail(e.target.value)}
+                                            className="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-white text-sm"
+                                            placeholder="sos@example.com"
+                                        />
+                                        <p className="text-[10px] text-dark-400 mt-2">
+                                            ⚠️ Holding the check-in button for 5 seconds will trigger a silent alarm to this email instead of checking in.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
                         <div className="flex gap-3">
                             <button

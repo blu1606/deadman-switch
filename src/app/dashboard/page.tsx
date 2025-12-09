@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useOwnerVaults, VaultData } from '@/hooks/useVault';
 import WalletButton from '@/components/wallet/WalletButton';
 import EditVaultModal from '@/components/dashboard/EditVaultModal';

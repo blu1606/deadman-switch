@@ -57,9 +57,9 @@ export function useOwnerVaults(): UseOwnerVaultsResult {
         let healthStatus: 'healthy' | 'warning' | 'critical' = 'healthy';
         const daysRemaining = timeRemaining / 86400;
 
-        if (daysRemaining < 1) {
+        if (percentageRemaining < 25) {
             healthStatus = 'critical';
-        } else if (daysRemaining < 3) {
+        } else if (percentageRemaining < 50) {
             healthStatus = 'warning';
         }
 
