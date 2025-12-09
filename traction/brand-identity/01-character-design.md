@@ -1,52 +1,57 @@
-# 🎨 Character Design: Kip & The States of Life
+# 01 Character Design: Kip (CSS-First)
 
-## 1. Visual Identity Spec
-Based on the reference image:
-*   **Color Palette:**
-    *   **Core:** `#34D399` (Emerald 400) to `#10B981` (Emerald 500).
-    *   **Glow:** `#6EE7B7` (Emerald 300) with blur.
-    *   **Eyes/Mouth:** `#064E3B` (Emerald 900) - Deep forest green, better contrast than black.
-*   **Shape:** Perfect circle that slightly "squishes" when it hits the bottom (jelly physics).
-*   **Particles:** Tiny floating dots around him (representing data bytes).
+> **Implementation Strategy:** Avoid heavy PNG/Lottie assets. Build Kip entirely with **CSS & SVG**.
+> **Why:** Performance (0kb load), Scalability (any size), Animation control (CSS keyframes).
 
-## 2. Emotional States (The "Tamagotchi" Loop)
+## 1. The Anatomy of Kip
 
-We don't map these to "Time Remaining" directly, but to "Health".
+Kip is essentially a `div` with `border-radius: 50%` and a glowing `box-shadow`.
 
-### A. 🟢 Healthy (Standard State)
-*   **Condition:** Time > 50%.
-*   **Visual:** Bright green, round, slow bobbing motion.
-*   **Face:** `^ u ^` or `• ‿ •`
-*   **Behavior:** Follows the mouse cursor with its eyes.
-*   **Message:** "All good!"
+### Base CSS
+```css
+.kip-body {
+  width: var(--size);
+  height: var(--size);
+  background: radial-gradient(circle at 30% 30%, #34D399, #10B981);
+  border-radius: 50%;
+  box-shadow: 
+    0 0 20px rgba(16, 185, 129, 0.4),
+    inset 2px 2px 5px rgba(255, 255, 255, 0.4);
+  animation: float 3s ease-in-out infinite;
+}
 
-### B. 🟡 Hungry (Warning State)
-*   **Condition:** Time < 50% (or < 7 days).
-*   **Visual:** Slightly dimmer, color shifts to Yellow-Green (Lime).
-*   **Face:** `• _ •` (Neutral/Waiting) or `> _ <` (Need attention).
-*   **Behavior:** Bounces occasionally to get attention.
-*   **Message:** "Getting hungry..."
+.kip-face {
+  /* SVG face centered */
+}
+```
 
-### C. 🔴 Critical (Danger State)
-*   **Condition:** Time < 24 hours.
-*   **Visual:** Orange/Red tint. Trembling/Shivering animation.
-*   **Face:** `T _ T` or `O _ O` (Panicked).
-*   **Behavior:** Sweat drop particles. Pulsing rapidly (The Heartbeat).
-*   **Message:** "PLEASE HELP!"
+## 2. Emotional States (Data-Driven)
 
-### D. 👻 Released (Ghost State)
-*   **Condition:** Timer Expired.
-*   **Visual:** Translucent Blue/White. Halo appears.
-*   **Face:** `X _ X` (dizzy) or `- _ -` (peaceful sleep).
-*   **Behavior:** Floats up and fades away (The Release).
+Kip's look is determined by one prop: `health` (0-100%).
 
-### E. ✨ Eating (Action State)
-*   **Condition:** User clicks "Check-in".
-*   **Visual:** Mouth opens `O`. Particles flow FROM the button INTO Kip. He glows intensely white-hot for a second.
-*   **Sound:** A satisfying "Chime" or "Munch" sound.
+| State | Health | Color | Shadow | Face (SVG Path) | Animation |
+|-------|--------|-------|--------|-----------------|-----------|
+| **Healthy** | >50% | Emerald (#10B981) | Strong Green | `^ ◡ ^` | Slow Float |
+| **Hungry** | 25-50% | Lime (#84CC16) | Weak Yellow | `• _ •` | Occasional Bounce |
+| **Critical** | <25% | Amber (#F59E0B) | Red Pulse | `> _ <` | Shaking / Rapid Pulse |
+| **Ghost** | 0% | Slate (#94A3B8) | None | `× _ ×` | Floating Up / Fade |
 
-## 3. The "My Vaults" Avatar System
-Instead of generic icons for different vaults, generate a **Unique Kip** for each vault (using the Vault Pubkey as a seed).
-*   **Variation 1:** Different hues (Teal, Cyan, Mint).
-*   **Variation 2:** Accessories (Glasses, Leaf on head, Antenna).
-*   **Result:** "That's my 'Savings Kip'. That's my 'Love Letter Kip'."
+## 3. The "Unique Kip" System (Procedural)
+
+To make users feel attached, their Kip should be unique.
+Use `vault_address` to seed random traits **CSS-only**:
+
+1.  **Hue Shift:** `filter: hue-rotate({seed % 360}deg)`
+    - Instant 360 variations without new assets.
+2.  **Accessory (Optional):**
+    - Simple absolute positioned SVGs: *Leaf, Antenna, Halo, Horns.*
+    - Select based on `seed % accessory_count`.
+
+## 4. Interaction Physics (Framer Motion)
+- **Hover:** Kip looks at cursor (move pupils).
+- **Click/Feed:** Squish effect (`scaleY: 0.8`) then bounce (`scale: 1.2`).
+- **Idle:** Breathe (`scale: 1.05` every 4s).
+
+## 5. Mobile Considerations
+- On mobile, Kip lives in the Bottom Navigation Bar or Top Right corner.
+- Acts as the "Status Indicator".
