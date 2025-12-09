@@ -83,6 +83,43 @@ export default function DashboardPage() {
         }
     };
 
+    // 6.5 Silent Alarm: Duress Handler
+    const handleDuress = async (vault: VaultData) => {
+        const vaultKey = vault.publicKey.toBase58();
+        console.log('🚨 DURESS TRIGGERED for vault:', vaultKey);
+
+        try {
+            // Get location if available
+            let location = null;
+            if (navigator.geolocation) {
+                try {
+                    const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+                    });
+                    location = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+                } catch {
+                    // Location denied or unavailable
+                }
+            }
+
+            // Call duress API (silently - no error shown to user)
+            await fetch('/api/alert/duress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vaultAddress: vaultKey, location })
+            });
+
+            // Fake success UI - user sees normal check-in success
+            setPingSuccess(vaultKey);
+            setTimeout(() => setPingSuccess(null), 3000);
+        } catch (e) {
+            console.error('Duress alert failed (silent):', e);
+            // Still show fake success to not alert attacker
+            setPingSuccess(vaultKey);
+            setTimeout(() => setPingSuccess(null), 3000);
+        }
+    };
+
     if (!connected) {
         return (
             <main className="min-h-screen flex items-center justify-center pt-16">
@@ -143,6 +180,7 @@ export default function DashboardPage() {
                                     onDelegate={() => setDelegatingVault(vault)}
                                     onTopUp={() => setBountyVault(vault)}
                                     onLockTokens={() => setLockingVault(vault)}
+                                    onDuress={() => handleDuress(vault)}
                                 />
                             );
                         })}
@@ -198,7 +236,7 @@ export default function DashboardPage() {
             {bountyVault && (
                 <TopUpBountyModal
                     vaultAddress={bountyVault.publicKey}
-                    currentBounty={0.02} // Mock value
+                    currentBounty={bountyVault.bountyLamports.toNumber() / 1e9}
                     onClose={() => setBountyVault(null)}
                     onSuccess={() => {
                         setBountyVault(null);

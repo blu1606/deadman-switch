@@ -17,6 +17,7 @@ interface VaultCardProps {
     onDelegate: () => void;
     onTopUp: () => void;
     onLockTokens: () => void;
+    onDuress?: () => void;
 }
 
 const VaultCard: FC<VaultCardProps> = ({
@@ -29,7 +30,8 @@ const VaultCard: FC<VaultCardProps> = ({
     onEdit,
     onDelegate,
     onTopUp,
-    onLockTokens
+    onLockTokens,
+    onDuress
 }) => {
     const key = vault.publicKey.toBase58();
 
@@ -137,6 +139,7 @@ const VaultCard: FC<VaultCardProps> = ({
                                     onComplete={onPing}
                                     disabled={isPinging || isSuccess}
                                     label={isSuccess ? "CHECK-IN COMPLETE" : undefined}
+                                    onDuress={onDuress}
                                 />
                             </div>
                             <button

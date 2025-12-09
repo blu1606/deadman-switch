@@ -1,27 +1,21 @@
 # 01 Character Design: Kip (CSS-First)
 
 > **Implementation Strategy:** Avoid heavy PNG/Lottie assets. Build Kip entirely with **CSS & SVG**.
-> **Why:** Performance (0kb load), Scalability (any size), Animation control (CSS keyframes).
 
 ## 1. The Anatomy of Kip
 
-Kip is essentially a `div` with `border-radius: 50%` and a glowing `box-shadow`.
+Kip is essentially a `div` with `border-radius: 50%` and a glowing `box-shadow`. The color is defined by a **Curated Palette**.
 
-### Base CSS
 ```css
 .kip-body {
   width: var(--size);
   height: var(--size);
-  background: radial-gradient(circle at 30% 30%, #34D399, #10B981);
+  background: var(--gradient);
   border-radius: 50%;
   box-shadow: 
-    0 0 20px rgba(16, 185, 129, 0.4),
+    0 0 20px var(--shadow-color),
     inset 2px 2px 5px rgba(255, 255, 255, 0.4);
   animation: float 3s ease-in-out infinite;
-}
-
-.kip-face {
-  /* SVG face centered */
 }
 ```
 
@@ -34,18 +28,22 @@ Kip's look is determined by one prop: `health` (0-100%).
 | **Healthy** | >50% | Emerald (#10B981) | Strong Green | `^ ◡ ^` | Slow Float |
 | **Hungry** | 25-50% | Lime (#84CC16) | Weak Yellow | `• _ •` | Occasional Bounce |
 | **Critical** | <25% | Amber (#F59E0B) | Red Pulse | `> _ <` | Shaking / Rapid Pulse |
-| **Ghost** | 0% | Slate (#94A3B8) | None | `× _ ×` | Floating Up / Fade |
+| **Ascended** | 0% | Starlight (#F8FAFC) | White Glow | `^ ◡ ^` (Peaceful) | Floats Up + Dissolves |
 
-## 3. The "Unique Kip" System (Procedural)
+> **Ascended Note:** When vault expires, Kip doesn't die. He turns into light and flies up to deliver the legacy. "Mission Complete."
 
-To make users feel attached, their Kip should be unique.
-Use `vault_address` to seed random traits **CSS-only**:
+## 3. The "Unique Kip" System (Curated Palettes)
 
-1.  **Hue Shift:** `filter: hue-rotate({seed % 360}deg)`
-    - Instant 360 variations without new assets.
-2.  **Accessory (Optional):**
-    - Simple absolute positioned SVGs: *Leaf, Antenna, Halo, Horns.*
-    - Select based on `seed % accessory_count`.
+Instead of random colors (which can be ugly), we use **5 Curated Gradient Palettes**.
+`seed % 5` determines the Kip Type.
+
+| ID | Name | Core Gradient (Bottom-Left → Top-Right) | Personality |
+|----|------|-----------------------------------------|-------------|
+| 0 | **Original** | Emerald 400 → 500 (`#34D399` → `#10B981`) | Friendly |
+| 1 | **Ocean** | Cyan 400 → Blue 500 (`#22D3EE` → `#3B82F6`) | Calm |
+| 2 | **Galaxy** | Purple 400 → Pink 500 (`#C084FC` → `#EC4899`) | Mystic |
+| 3 | **Solar** | Orange 400 → Amber 500 (`#FB923C` → `#F59E0B`) | Energetic |
+| 4 | **Phantom** | Teal 400 → Slate 500 (`#2DD4BF` → `#64748B`) | Stoic |
 
 ## 4. Interaction Physics (Framer Motion)
 - **Hover:** Kip looks at cursor (move pupils).
@@ -53,5 +51,4 @@ Use `vault_address` to seed random traits **CSS-only**:
 - **Idle:** Breathe (`scale: 1.05` every 4s).
 
 ## 5. Mobile Considerations
-- On mobile, Kip lives in the Bottom Navigation Bar or Top Right corner.
-- Acts as the "Status Indicator".
+- On mobile, Kip acts as the "Status Indicator" in the Navbar.

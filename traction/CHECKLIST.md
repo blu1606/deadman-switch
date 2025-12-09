@@ -60,22 +60,31 @@
   - [x] KeeperSpirit component
   - [x] Integrate Kip into Dashboard (frontend only)
   - ~~Dynamic NFT~~ → Deferred to v2
-- [ ] 6.5 Silent Alarm (NEW) 📝 Spec Ready
-  - [ ] Duress detection in HoldCheckInButton
-  - [ ] /api/alert/duress endpoint
-  - [ ] Emergency contacts in settings
+- [x] 6.5 Silent Alarm (NEW) ✅ Done
+  - [x] Duress detection in HoldCheckInButton
+  - [x] /api/alert/duress endpoint
+  - [x] Emergency contacts in settings (Supabase)
 
-### Phase 7: Decentralization ~40%
-- [ ] 7.1 Bounty Hunter
-  - [ ] Contract: bounty field + permissionless trigger
-  - [ ] Gravedigger SDK (community bot script)
-  - [ ] UI: bounty slider
+### Phase 7: Decentralization ~90%
+- [x] 7.1 Bounty Hunter ✅ Done
+  - [x] Contract: bounty field + permissionless trigger
+  - [x] Gravedigger SDK (scripts/gravedigger.ts)
+  - [x] UI: bounty slider in create wizard
 - [x] 7.2 Delegate Check-in ✅ Done
+- [x] 7.1b Token Vesting ✅ Done (NEW)
+  - [x] T.1: Lock Native SOL (Contract + UI)
+  - [x] T.2: Lock SPL Tokens (Contract + UI)
+  - [x] T.3: Unified Claim Portal
 - ~~7.3 Email Magic Link~~ → Deferred
 
 ---
 
 ## 📝 Spec Ready (Not Started)
+
+### Phase 11: Premium Features (New)
+- [x] 11.1 Guardian Key Sharding (SSS)
+- [x] 11.2 Gas Station Network (Gasless Claim)
+- [ ] Implementation
 
 ### Phase 9: AI Integration (Micro-UX)
 - [x] 9.1 Kip's Personality (Static Text)
@@ -106,7 +115,8 @@
 | Create Vault UX | ✅ Done | 100% |
 | Phase 4: Automation | ⏳ Near | 90% |
 | Phase 6: Roadmap | ⏳ Near | 90% |
-| Phase 7: Decentralization | 🔄 Active | 40% |
+| Phase 7: Decentralization | ✅ Near | 80% |
+| Phase 11: Premium | 📝 Spec | 0% |
 | Phase 9: AI (Micro) | 📝 Spec | 10% |
 | Brand Identity | 📝 Spec | 25% |
 

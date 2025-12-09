@@ -93,7 +93,26 @@ export function useEditVault({ vault, onSuccess }: UseEditVaultProps) {
                 // For now, let's just proceed to success if they just changed duress settings.
             }
 
-            // Save Duress Settings (Local Only)
+            // Save Duress Settings to Supabase
+            if (duressEnabled && emergencyEmail) {
+                try {
+                    await fetch('/api/vault/contact', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            vaultAddress: vault.publicKey.toBase58(),
+                            contactEmail: emergencyEmail,
+                            contactName: null, // Could add name field later
+                            duressEnabled: duressEnabled
+                        })
+                    });
+                } catch (e) {
+                    console.error('Failed to save emergency contact:', e);
+                    // Non-blocking - continue with success
+                }
+            }
+
+            // Also save to localStorage as backup/cache
             if (typeof window !== 'undefined') {
                 localStorage.setItem(`duress_enabled_${vault.publicKey.toBase58()}`, String(duressEnabled));
                 localStorage.setItem(`duress_email_${vault.publicKey.toBase58()}`, emergencyEmail);
