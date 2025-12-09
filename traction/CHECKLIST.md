@@ -32,19 +32,19 @@
 
 ## 🔄 In Progress
 
-### Phase 6: Future Roadmap ~65%
+### Phase 6: Future Roadmap ~90%
 - [x] 6.1 Frictionless Check-in (~80%)
   - [x] Contract: delegate field + set_delegate
   - [x] UI: DelegateModal
   - [ ] Deploy updated contract
-- [x] 6.2 Cinematic Reveal (~70%)
+- [x] 6.2 Cinematic Reveal ✅ Done
   - [x] RevealSequence, VaultSafe3D
   - [x] Typewriter effect
-- [x] 6.3 Tamagotchi Vault (~60%) **SIMPLIFIED**
+- [x] 6.3 Tamagotchi Vault ✅ Done
   - [x] KeeperSpirit component
   - [x] Integrate Kip into Dashboard (frontend only)
   - ~~Dynamic NFT~~ → Deferred to v2
-- [ ] 6.5 Silent Alarm (NEW) 📝 Spec Ready
+- [x] 6.5 Silent Alarm (NEW) ✅ Done
   - [x] Duress detection in HoldCheckInButton
   - [x] /api/alert/duress endpoint
   - [x] Emergency contacts in settings
@@ -100,7 +100,7 @@
 | Phase 2: Encryption | ✅ Done | 100% |
 | Phase 3: Claim | ✅ Done | 100% |
 | Phase 4: Automation | ⏳ Near | 90% |
-| Phase 6: Roadmap | 🔄 Active | 65% |
+| Phase 6: Roadmap | ⏳ Near | 90% |
 | Phase 7: Decentralization | 🔄 Active | 35% |
 | Phase 8: Growth | 📝 Spec | 15% |
 | Phase 9: AI | 📝 Spec | 10% |
@@ -112,10 +112,8 @@
 ## 🎯 Next Priority Actions (48h)
 
 1. **Phase 7.1:** Bounty Hunter contract → Kill Vercel cron
-2. **Phase 6.5:** Silent Alarm → High USP, easy win
-3. **Phase 6.3:** Integrate Kip states into Dashboard
-4. **Phase 8.3:** Flash Onboarding demo mode
-5. **Phase 4.4:** Mainnet deploy
+2. **Phase 8.3:** Flash Onboarding demo mode
+3. **Phase 4.4:** Mainnet deploy
 
 ---
 
