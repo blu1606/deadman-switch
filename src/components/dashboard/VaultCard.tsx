@@ -1,9 +1,9 @@
-import { FC } from 'react';
-import { VaultData, VaultStatus } from '@/hooks/useVault';
-import { truncateAddress, formatTimeRemaining } from '@/lib/utils';
+import { FC, useState } from 'react';
+import { VaultStatus } from '@/hooks/useVault';
+import { VaultData } from '@/utils/solanaParsers';
+import { truncateAddress } from '@/lib/utils'; // Keep this as it's used
 import HoldCheckInButton from './HoldCheckInButton';
-import KeeperSpirit from './KeeperSpirit';
-
+import KipAvatar from '@/components/brand/KipAvatar';
 import { BN } from '@coral-xyz/anchor';
 
 interface VaultCardProps {
@@ -11,13 +11,15 @@ interface VaultCardProps {
     status: VaultStatus;
     isPinging: boolean;
     isSuccess: boolean;
-    streak?: number; // Ping streak count
+    streak?: number;
     onPing: () => void;
     onEdit: () => void;
     onDelegate: () => void;
     onTopUp: () => void;
     onLockTokens: () => void;
     onDuress?: () => void;
+    onUpdate?: () => void; // Added for compatibility if dashboard sends it
+    onCloseVault?: () => void; // Added for compatibility
 }
 
 const VaultCard: FC<VaultCardProps> = ({
@@ -35,6 +37,23 @@ const VaultCard: FC<VaultCardProps> = ({
 }) => {
     const key = vault.publicKey.toBase58();
 
+    // Calculate precise health % for Kip
+    // health = (timeRemaining / timeInterval) * 100
+    const totalTime = vault.timeInterval.toNumber();
+    const remaining = Math.max(0, status.timeRemaining);
+    // Avoid division by zero
+    const healthPercent = totalTime > 0 ? Math.min(100, Math.max(0, (remaining / totalTime) * 100)) : 0;
+
+    const [isCharging, setIsCharging] = useState(false);
+
+    // Helper to format usage in the card (local definition to avoid import issues if utils missing)
+    const formatLabel = (seconds: number) => {
+        if (seconds <= 0) return "EXPIRED";
+        const d = Math.floor(seconds / (3600 * 24));
+        const h = Math.floor((seconds % (3600 * 24)) / 3600);
+        return `${d}d ${h}h`;
+    };
+
     return (
         <div className={`card group relative overflow-hidden transition-all duration-300 hover:border-dark-500 ${isSuccess ? 'border-safe-green/50 shadow-safe-green/20' : ''}`}>
             {/* Background Decor */}
@@ -44,16 +63,24 @@ const VaultCard: FC<VaultCardProps> = ({
 
             <div className="relative z-10 flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start">
 
-                {/* Left: Visual Indicators */}
-                <div className="flex flex-col items-center gap-4 min-w-[120px]">
-                    {/* Keeper Spirit (Tamagotchi) */}
-                    <KeeperSpirit
-                        healthStatus={status.healthStatus}
+                {/* Left: Visual Indicators (Kip Avatar) */}
+                <div className="flex flex-col items-center gap-4 min-w-[120px] pt-2">
+                    <KipAvatar
+                        seed={key}
+                        health={healthPercent}
                         isReleased={vault.isReleased}
                         size="md"
-                        showStreak={true}
-                        streak={streak}
+                        isCharging={isCharging}
+                        showGlow={!vault.isReleased} // No glow if dead? Or yes? Spec says Ghost glows.
                     />
+
+                    {/* Streak Display under Kip */}
+                    {streak > 0 && !vault.isReleased && (
+                        <div className="flex items-center gap-1 text-[10px] font-bold tracking-widest text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded-full border border-primary-500/20">
+                            <span>🔥</span>
+                            <span>{streak} DAY STREAK</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Center: Info */}
@@ -71,7 +98,7 @@ const VaultCard: FC<VaultCardProps> = ({
                         <div className="bg-dark-900/50 p-3 rounded-lg border border-dark-700/50">
                             <div className="text-[10px] text-dark-500 uppercase tracking-wider mb-1">Time Remaining</div>
                             <div className={`font-mono text-lg ${status.isExpired ? 'text-red-500' : 'text-white'}`}>
-                                {formatTimeRemaining(status.timeRemaining)}
+                                {formatLabel(status.timeRemaining)}
                             </div>
                         </div>
                         <div className="bg-dark-900/50 p-3 rounded-lg border border-dark-700/50">
@@ -140,6 +167,7 @@ const VaultCard: FC<VaultCardProps> = ({
                                     disabled={isPinging || isSuccess}
                                     label={isSuccess ? "CHECK-IN COMPLETE" : undefined}
                                     onDuress={onDuress}
+                                    onHoldChange={setIsCharging}
                                 />
                             </div>
                             <button

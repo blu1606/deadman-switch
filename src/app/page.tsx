@@ -59,37 +59,13 @@ export default function Home() {
                                     <div className="flex flex-col gap-4">
                                         <div className="flex flex-col sm:flex-row gap-4">
                                             <WalletButton />
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        const { Keypair, Connection, LAMPORTS_PER_SOL, clusterApiUrl } = await import('@solana/web3.js');
-                                                        const demoKeypair = Keypair.generate();
-                                                        localStorage.setItem('demo_wallet', JSON.stringify(Array.from(demoKeypair.secretKey)));
-
-                                                        // Notify user (mock UI feedback handled by button text potentially)
-                                                        console.log("Demo Wallet Generated:", demoKeypair.publicKey.toBase58());
-
-                                                        // Try airdrop (might be rate limited, so we handle gracefully)
-                                                        try {
-                                                            const connection = new Connection(clusterApiUrl('devnet'));
-                                                            await connection.requestAirdrop(demoKeypair.publicKey, 0.1 * LAMPORTS_PER_SOL);
-                                                        } catch (e) {
-                                                            console.warn("Airdrop failed, but proceeding with demo flow:", e);
-                                                        }
-
-                                                        // Force a "connect" via the demo wallet mechanism (would require context update, but for now we redirect)
-                                                        // In a real app we'd trigger a context update. Here we simulate.
-                                                        alert("Demo Mode Activated: Ephemeral wallet generated!\nRedirecting to Dashboard...");
-                                                        window.location.href = '/dashboard?demo=true';
-                                                    } catch (err) {
-                                                        console.error("Demo failed:", err);
-                                                    }
-                                                }}
+                                            <Link
+                                                href="/demo"
                                                 className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-primary-500/30 transition-all text-white font-medium flex items-center justify-center gap-2"
                                             >
                                                 <span>▶️ Try Demo</span>
                                                 <span className="text-xs text-dark-400 font-normal">(No Wallet Needed)</span>
-                                            </button>
+                                            </Link>
                                         </div>
                                         <p className="text-dark-500 text-sm ml-2 italic">
                                             Connect to begin your legacy

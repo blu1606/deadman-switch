@@ -9,6 +9,7 @@ import DelegateModal from '@/components/dashboard/DelegateModal';
 import TopUpBountyModal from '@/components/dashboard/TopUpBountyModal';
 import LockTokensModal from '@/components/dashboard/LockTokensModal';
 import VaultCard from '@/components/dashboard/VaultCard';
+import KipEmpty from '@/components/brand/KipEmpty';
 
 export default function DashboardPage() {
     const { connected } = useWallet();
@@ -181,20 +182,16 @@ export default function DashboardPage() {
                                     onTopUp={() => setBountyVault(vault)}
                                     onLockTokens={() => setLockingVault(vault)}
                                     onDuress={() => handleDuress(vault)}
+                                    onUpdate={refetch}
+                                    onCloseVault={refetch}
                                 />
                             );
                         })}
                     </div>
                 ) : (
-                    <div className="text-center py-20 px-4">
-                        <div className="w-24 h-24 bg-dark-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-1 ring-dark-700">
-                            <div className="w-2 h-2 bg-dark-600 rounded-full animate-ping" />
-                        </div>
-                        <h3 className="text-2xl font-bold mb-3 tracking-tight">System Idle</h3>
-                        <p className="text-dark-400 max-w-md mx-auto mb-8 leading-relaxed">
-                            No active switches detected. Initialize a new protocol to secure your digital legacy.
-                        </p>
-                        <a href="/create" className="btn-primary py-4 px-8 text-lg shadow-2xl shadow-primary-900/20">
+                    <div className="flex flex-col items-center justify-center py-20 px-4">
+                        <KipEmpty />
+                        <a href="/create" className="mt-8 btn-primary py-4 px-8 text-lg shadow-2xl shadow-primary-900/20">
                             INITIALIZE PROTOCOL
                         </a>
                     </div>

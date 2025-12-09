@@ -6,6 +6,7 @@ interface HoldCheckInButtonProps {
     label?: string;
     loadingLabel?: string;
     onDuress?: () => void;
+    onHoldChange?: (isHolding: boolean) => void;
 }
 
 export default function HoldCheckInButton({
@@ -13,20 +14,29 @@ export default function HoldCheckInButton({
     disabled = false,
     label = "HOLD TO CHECK IN",
     loadingLabel = "VERIFYING...",
-    onDuress
+    onDuress,
+    onHoldChange
 }: HoldCheckInButtonProps) {
     const [progress, setProgress] = useState(0);
     const [isHolding, setIsHolding] = useState(false);
+
+    useEffect(() => {
+        if (onHoldChange) {
+            onHoldChange(isHolding);
+        }
+    }, [isHolding, onHoldChange]);
     const [isComplete, setIsComplete] = useState(false);
 
     // Config
     const HOLD_DURATION = 1500; // ms
     const DURESS_DURATION = 5000; // ms for silent alarm
     const UPDATE_INTERVAL = 16; // ~60fps
+    const HAPTIC_INTERVAL = 100; // ms
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const progressRef = useRef(0);
     const isDuressRef = useRef(false);
+    const lastHapticRef = useRef(0);
 
     const startHolding = (e: React.MouseEvent | React.TouchEvent) => {
         if (disabled || isComplete) return;
