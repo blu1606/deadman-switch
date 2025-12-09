@@ -19,8 +19,8 @@ interface Props {
 
 const WalletContextProvider: FC<Props> = ({ children }) => {
 
-    // Use devnet for MVP
-    const endpoint = useMemo(() => clusterApiUrl('devnet'), []);
+    // Use custom RPC if available, fallback to devnet
+    const endpoint = useMemo(() => process.env.NEXT_PUBLIC_RPC_URL || clusterApiUrl('devnet'), []);
 
     // Supported wallets
     const wallets = useMemo(

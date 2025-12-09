@@ -1,16 +1,18 @@
 'use client';
 
-import { FC, useState } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { FC } from 'react';
 import { PublicKey } from '@solana/web3.js';
-import { Program, AnchorProvider, BN } from '@coral-xyz/anchor';
+import { BN } from '@coral-xyz/anchor';
+import { useEditVault } from '@/hooks/useEditVault';
+import DuressSettings from './DuressSettings';
+import MagicLinkSettings from './MagicLinkSettings';
 
 interface EditVaultModalProps {
     vault: {
         publicKey: PublicKey;
         recipient: PublicKey;
         timeInterval: BN;
-        name?: string; // 10.1
+        name?: string;
     };
     onClose: () => void;
     onSuccess: () => void;
@@ -26,100 +28,24 @@ const INTERVAL_OPTIONS = [
 ];
 
 const EditVaultModal: FC<EditVaultModalProps> = ({ vault, onClose, onSuccess }) => {
-    const { publicKey, signTransaction, signAllTransactions } = useWallet();
-    const { connection } = useConnection();
+    const {
+        recipientAddress, setRecipientAddress,
+        timeInterval, setTimeInterval,
+        vaultName, setVaultName,
+        duressEnabled, setDuressEnabled,
+        emergencyEmail, setEmergencyEmail,
+        status,
+        error,
+        handleUpdate
+    } = useEditVault({ vault, onSuccess });
 
-    const [recipientAddress, setRecipientAddress] = useState(vault.recipient.toBase58());
-    const [timeInterval, setTimeInterval] = useState(vault.timeInterval.toNumber());
-    const [vaultName, setVaultName] = useState(vault.name || ''); // 10.1
-    const [status, setStatus] = useState<'idle' | 'updating' | 'success' | 'error'>('idle');
-    const [error, setError] = useState<string | null>(null);
-
-    // Duress Settings (Local Storage for MVP)
-    const [duressEnabled, setDuressEnabled] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem(`duress_enabled_${vault.publicKey.toBase58()}`);
-            return saved === 'true';
-        }
-        return false;
-    });
-
-    // Magic Link Logic
-    const [magicLinkEnabled, setMagicLinkEnabled] = useState(() => {
+    // Helper for magic link init state
+    const magicLinkInitState = (() => {
         if (typeof window !== 'undefined') {
             return localStorage.getItem(`magic_link_${vault.publicKey.toBase58()}`) === 'true';
         }
         return false;
-    });
-    const [updatingMagicLink, setUpdatingMagicLink] = useState(false);
-    const [emergencyEmail, setEmergencyEmail] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem(`duress_email_${vault.publicKey.toBase58()}`) || '';
-        }
-        return '';
-    });
-
-    const handleUpdate = async () => {
-        if (!publicKey || !signTransaction || !signAllTransactions) {
-            setError('Wallet not connected');
-            return;
-        }
-
-        // Validate recipient address
-        let recipientPubkey: PublicKey;
-        try {
-            recipientPubkey = new PublicKey(recipientAddress);
-        } catch {
-            setError('Invalid recipient address');
-            return;
-        }
-
-        setStatus('updating');
-        setError(null);
-
-        try {
-            const provider = new AnchorProvider(
-                connection,
-                { publicKey, signTransaction, signAllTransactions },
-                { commitment: 'confirmed' }
-            );
-
-            const idl = await import('@/idl/deadmans_switch.json');
-            const program = new Program(idl as any, provider);
-
-            // Determine what changed
-            const recipientChanged = recipientAddress !== vault.recipient.toBase58();
-            const intervalChanged = timeInterval !== vault.timeInterval.toNumber();
-            const nameChanged = vaultName !== (vault.name || '');
-
-            await (program.methods as any)
-                .updateVault(
-                    recipientChanged ? recipientPubkey : null,
-                    intervalChanged ? new BN(timeInterval) : null,
-                    nameChanged ? vaultName : null // 10.1: Rename
-                )
-                .accounts({
-                    vault: vault.publicKey,
-                    owner: publicKey,
-                })
-                .rpc();
-
-            // Save Duress Settings (Local Only)
-            if (typeof window !== 'undefined') {
-                localStorage.setItem(`duress_enabled_${vault.publicKey.toBase58()}`, String(duressEnabled));
-                localStorage.setItem(`duress_email_${vault.publicKey.toBase58()}`, emergencyEmail);
-            }
-
-            setStatus('success');
-            setTimeout(() => {
-                onSuccess();
-            }, 1500);
-        } catch (err: any) {
-            console.error('Update failed:', err);
-            setError(err.message || 'Failed to update vault');
-            setStatus('error');
-        }
-    };
+    })();
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -136,7 +62,7 @@ const EditVaultModal: FC<EditVaultModalProps> = ({ vault, onClose, onSuccess }) 
                 ) : (
                     <>
                         <div className="space-y-4 mb-6">
-                            {/* Vault Name - 10.1 */}
+                            {/* Vault Name */}
                             <div>
                                 <label className="block text-xs font-medium text-dark-300 mb-1">
                                     Vault Name
@@ -190,116 +116,18 @@ const EditVaultModal: FC<EditVaultModalProps> = ({ vault, onClose, onSuccess }) 
                             </div>
                         )}
 
-                        <div className="border-t border-dark-700 pt-6 mb-6">
-                            <h3 className="text-sm font-bold text-dark-300 mb-4 uppercase tracking-wider">Silent Alarm (Duress Mode)</h3>
+                        <DuressSettings
+                            enabled={duressEnabled}
+                            setEnabled={setDuressEnabled}
+                            email={emergencyEmail}
+                            setEmail={setEmergencyEmail}
+                        />
 
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-sm text-white">Enable Duress Mode</label>
-                                    <button
-                                        onClick={() => setDuressEnabled(!duressEnabled)}
-                                        className={`w-12 h-6 rounded-full transition-colors relative ${duressEnabled ? 'bg-red-500' : 'bg-dark-600'}`}
-                                    >
-                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${duressEnabled ? 'left-7' : 'left-1'}`} />
-                                    </button>
-                                </div>
-
-                                {duressEnabled && (
-                                    <div className="animate-fade-in">
-                                        <label className="block text-xs font-medium text-dark-300 mb-1">
-                                            Emergency Contact (Email)
-                                        </label>
-                                        <input
-                                            type="email"
-                                            value={emergencyEmail}
-                                            onChange={(e) => setEmergencyEmail(e.target.value)}
-                                            className="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-white text-sm"
-                                            placeholder="sos@example.com"
-                                        />
-                                        <p className="text-[10px] text-dark-400 mt-2">
-                                            ⚠️ Holding the check-in button for 5 seconds will trigger a silent alarm to this email instead of checking in.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Magic Link Section */}
-                        <div className="border-t border-dark-700 pt-6 mb-6">
-                            <h3 className="text-sm font-bold text-dark-300 mb-4 uppercase tracking-wider">
-                                Frictionless Check-in
-                            </h3>
-
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <label className="text-sm text-white block">Email Magic Link</label>
-                                    <p className="text-xs text-dark-400 max-w-[200px] mt-1">
-                                        Allow checking in directly from your email reminder. No wallet connection required.
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={async () => {
-                                        if (updatingMagicLink) return;
-                                        // Ensure wallet is connected
-                                        if (!publicKey || !signTransaction || !signAllTransactions) {
-                                            setError("Please connect your wallet first");
-                                            return;
-                                        }
-
-                                        setUpdatingMagicLink(true);
-
-                                        try {
-                                            const provider = new AnchorProvider(
-                                                connection,
-                                                // @ts-ignore - we checked for existence above
-                                                { publicKey, signTransaction, signAllTransactions },
-                                                { commitment: 'confirmed' }
-                                            );
-                                            const idl = await import('@/idl/deadmans_switch.json');
-                                            const program = new Program(idl as any, provider);
-
-                                            const newEnabled = !magicLinkEnabled;
-
-                                            // Fetch platform key if enabling
-                                            let delegateKey = null;
-                                            if (newEnabled) {
-                                                try {
-                                                    const res = await fetch('/api/system/delegate-key');
-                                                    if (!res.ok) throw new Error("Failed to fetch server key");
-                                                    const data = await res.json();
-                                                    delegateKey = new PublicKey(data.publicKey);
-                                                } catch (err) {
-                                                    console.error("Delegate fetch error", err);
-                                                    throw new Error("Could not find Deadman Switch server key");
-                                                }
-                                            }
-
-                                            // 1. Update Delegate on Contract
-                                            await (program.methods as any)
-                                                .setDelegate(delegateKey) // setDelegate accepts Option<Pubkey> so null is fine
-                                                .accounts({
-                                                    vault: vault.publicKey,
-                                                    owner: publicKey,
-                                                })
-                                                .rpc();
-
-                                            // 2. Update Local State & Storage
-                                            setMagicLinkEnabled(newEnabled);
-                                            localStorage.setItem(`magic_link_${vault.publicKey.toBase58()}`, String(newEnabled));
-
-                                        } catch (e: any) {
-                                            console.error("Failed to toggle magic link", e);
-                                            setError("Failed to update Magic Link: " + e.message);
-                                        } finally {
-                                            setUpdatingMagicLink(false);
-                                        }
-                                    }}
-                                    className={`w-12 h-6 rounded-full transition-colors relative ${magicLinkEnabled ? 'bg-primary-600' : 'bg-dark-600'}`}
-                                >
-                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${magicLinkEnabled ? 'left-7' : 'left-1'}`} />
-                                </button>
-                            </div>
-                        </div>
+                        <MagicLinkSettings
+                            vault={vault}
+                            initialEnabled={magicLinkInitState}
+                            onError={(msg) => console.error(msg)} // Or handle more visibly
+                        />
 
                         <div className="flex gap-3">
                             <button

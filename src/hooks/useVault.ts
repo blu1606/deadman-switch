@@ -2,24 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
 import { Program, AnchorProvider, BN } from '@coral-xyz/anchor';
 import { PROGRAM_ID } from '@/utils/anchor';
+import { parseVaultAccount, VaultData } from '@/utils/solanaParsers';
 
-// Vault data structure matching on-chain account
-export interface VaultData {
-    publicKey: PublicKey;
-    owner: PublicKey;
-    recipient: PublicKey;
-    ipfsCid: string;
-    encryptedKey: string;
-    timeInterval: BN;
-    lastCheckIn: BN;
-    isReleased: boolean;
-    vaultSeed: BN;
-    bump: number;
-    delegate?: PublicKey | null;
-}
+export type { VaultData }; // Re-export for consumers
 
 export interface VaultStatus {
     isExpired: boolean;
@@ -96,63 +83,7 @@ export function useOwnerVaults(): UseOwnerVaultsResult {
                 ],
             });
 
-            const parsed = accounts.map((acc) => {
-                const data = acc.account.data;
-                let offset = 8;
-
-                const owner = new PublicKey(data.slice(offset, offset + 32));
-                offset += 32;
-
-                const recipient = new PublicKey(data.slice(offset, offset + 32));
-                offset += 32;
-
-                const ipfsCidLen = data.readUInt32LE(offset);
-                offset += 4;
-                const ipfsCid = data.slice(offset, offset + ipfsCidLen).toString('utf-8');
-                offset += ipfsCidLen;
-
-                const encryptedKeyLen = data.readUInt32LE(offset);
-                offset += 4;
-                const encryptedKey = data.slice(offset, offset + encryptedKeyLen).toString('utf-8');
-                offset += encryptedKeyLen;
-
-                const timeInterval = new BN(data.slice(offset, offset + 8), 'le');
-                offset += 8;
-
-                const lastCheckIn = new BN(data.slice(offset, offset + 8), 'le');
-                offset += 8;
-
-                const isReleased = data[offset] === 1;
-                offset += 1;
-
-                const vaultSeed = new BN(data.slice(offset, offset + 8), 'le');
-                offset += 8;
-
-                const bump = data[offset];
-                offset += 1;
-
-                const hasDelegate = data[offset] === 1;
-                offset += 1;
-                let delegate: PublicKey | null = null;
-                if (hasDelegate) {
-                    delegate = new PublicKey(data.slice(offset, offset + 32));
-                    offset += 32;
-                }
-
-                return {
-                    publicKey: acc.pubkey,
-                    owner,
-                    recipient,
-                    ipfsCid,
-                    encryptedKey,
-                    timeInterval,
-                    lastCheckIn,
-                    isReleased,
-                    vaultSeed,
-                    bump,
-                    delegate,
-                } as VaultData;
-            });
+            const parsed = accounts.map((acc) => parseVaultAccount(acc.pubkey, acc.account.data));
 
             setVaults(parsed);
         } catch (err) {

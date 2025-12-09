@@ -10,6 +10,8 @@ import VaultSafe from './VaultSafe';
 import AssetCard from './AssetCard';
 import VaultContentEditor from '@/components/vault/VaultContentEditor';
 import { VaultItem } from '@/types/vaultBundle';
+import VaultTimeline from './VaultTimeline';
+import { getCreatedDate } from '@/lib/utils';
 
 interface ClaimModalProps {
     vault: any;
@@ -271,6 +273,16 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                                 {/* Safe Preview */}
                                 <div className="mb-8">
                                     <VaultSafe state="locked" />
+
+                                    {/* C.1 Timeline Visualization */}
+                                    <div className="mt-8">
+                                        <VaultTimeline
+                                            createdAt={getCreatedDate(vault.vaultSeed)}
+                                            releasedAt={new Date((vault.lastCheckIn.toNumber() + vault.timeInterval.toNumber()) * 1000)}
+                                            senderAddress={vault.owner.toBase58()}
+                                            isReleased={vault.isReleased}
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Encryption Mode Info */}

@@ -1,7 +1,8 @@
 'use client';
 
-import { FC, useState, useCallback } from 'react';
+import { FC, useState, useCallback, useEffect } from 'react';
 import { PublicKey } from '@solana/web3.js';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { VaultFormData } from '@/app/create/page';
 
 interface Props {
@@ -12,8 +13,18 @@ interface Props {
 }
 
 const StepSetRecipient: FC<Props> = ({ formData, updateFormData, onNext, onBack }) => {
+    const { publicKey: ownerWallet } = useWallet();
     const [addressError, setAddressError] = useState<string | null>(null);
     const [emailError, setEmailError] = useState<string | null>(null);
+    const [useMyWallet, setUseMyWallet] = useState(false);
+
+    // When toggle is enabled, auto-fill owner wallet
+    useEffect(() => {
+        if (useMyWallet && ownerWallet) {
+            updateFormData({ recipientAddress: ownerWallet.toBase58() });
+            setAddressError(null);
+        }
+    }, [useMyWallet, ownerWallet, updateFormData]);
 
     const validateAddress = useCallback((address: string): boolean => {
         if (!address) {
@@ -52,12 +63,26 @@ const StepSetRecipient: FC<Props> = ({ formData, updateFormData, onNext, onBack 
         const value = e.target.value;
         updateFormData({ recipientAddress: value });
         if (value) validateAddress(value);
+        // If user manually edits, disable the toggle
+        if (useMyWallet && ownerWallet && value !== ownerWallet.toBase58()) {
+            setUseMyWallet(false);
+        }
     };
 
     const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         updateFormData({ recipientEmail: value });
         if (value) validateEmail(value);
+    };
+
+    const handleToggle = () => {
+        setUseMyWallet(!useMyWallet);
+        if (!useMyWallet) {
+            // Just toggling on - address will be set by useEffect
+        } else {
+            // Toggling off - clear the address
+            updateFormData({ recipientAddress: '' });
+        }
     };
 
     const handleNext = () => {
@@ -80,6 +105,23 @@ const StepSetRecipient: FC<Props> = ({ formData, updateFormData, onNext, onBack 
                 </p>
             </div>
 
+            {/* "I don't have their address" Toggle */}
+            <div className="bg-dark-800 border border-dark-700 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm text-white font-medium">I don&apos;t have their address yet</p>
+                        <p className="text-xs text-dark-400 mt-0.5">Use your own wallet as placeholder. Update it later in settings.</p>
+                    </div>
+                    <button
+                        onClick={handleToggle}
+                        className={`w-12 h-6 rounded-full transition-colors relative ${useMyWallet ? 'bg-primary-600' : 'bg-dark-600'}`}
+                        type="button"
+                    >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${useMyWallet ? 'left-7' : 'left-1'}`} />
+                    </button>
+                </div>
+            </div>
+
             {/* Recipient Address */}
             <div>
                 <label className="block text-sm font-medium text-dark-300 mb-2">
@@ -90,9 +132,11 @@ const StepSetRecipient: FC<Props> = ({ formData, updateFormData, onNext, onBack 
                     value={formData.recipientAddress}
                     onChange={handleAddressChange}
                     placeholder="Enter Solana wallet address"
+                    disabled={useMyWallet}
                     className={`
             w-full bg-dark-900 border rounded-lg px-4 py-3 text-white
             placeholder:text-dark-500 focus:outline-none focus:ring-2
+            ${useMyWallet ? 'opacity-60 cursor-not-allowed' : ''}
             ${addressError
                             ? 'border-red-500 focus:ring-red-500/50'
                             : 'border-dark-600 focus:ring-primary-500/50 focus:border-primary-500'
@@ -102,9 +146,16 @@ const StepSetRecipient: FC<Props> = ({ formData, updateFormData, onNext, onBack 
                 {addressError && (
                     <p className="text-red-400 text-sm mt-1">{addressError}</p>
                 )}
-                <p className="text-dark-500 text-xs mt-1">
-                    This wallet will be able to claim and decrypt your vault contents.
-                </p>
+                {useMyWallet && (
+                    <p className="text-yellow-500 text-xs mt-1">
+                        ⚠️ Using your own wallet. Remember to update the recipient in vault settings before release!
+                    </p>
+                )}
+                {!useMyWallet && (
+                    <p className="text-dark-500 text-xs mt-1">
+                        This wallet will be able to claim and decrypt your vault contents.
+                    </p>
+                )}
             </div>
 
             {/* Recipient Email (Optional) */}
@@ -168,3 +219,4 @@ const StepSetRecipient: FC<Props> = ({ formData, updateFormData, onNext, onBack 
 };
 
 export default StepSetRecipient;
+

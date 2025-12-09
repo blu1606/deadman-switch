@@ -3,6 +3,7 @@
 import { FC, useState, useRef } from 'react';
 import { VaultItem, VaultItemType, BUNDLE_LIMITS } from '@/types/vaultBundle';
 import { fileToVaultItem, textToVaultItem, getItemIcon, formatFileSize } from '@/utils/vaultBundle';
+import VoiceRecorder from './VoiceRecorder';
 
 interface VaultContentEditorProps {
     items: VaultItem[];
@@ -18,6 +19,7 @@ const VaultContentEditor: FC<VaultContentEditorProps> = ({
     readOnly = false
 }) => {
     const [isAddingText, setIsAddingText] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
     const [textName, setTextName] = useState('');
     const [textContent, setTextContent] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -60,6 +62,19 @@ const VaultContentEditor: FC<VaultContentEditorProps> = ({
 
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
+        }
+    };
+
+    const handleRecordingComplete = async (blob: Blob, durationSeconds: number) => {
+        setIsRecording(false);
+        setError(null);
+
+        try {
+            const file = new File([blob], `Recording_${Date.now()}.webm`, { type: blob.type || 'audio/webm' });
+            const item = await fileToVaultItem(file);
+            onItemsChange([...items, item]);
+        } catch (err: any) {
+            setError(err.message);
         }
     };
 
@@ -154,7 +169,7 @@ const VaultContentEditor: FC<VaultContentEditorProps> = ({
             )}
 
             {/* Empty State */}
-            {items.length === 0 && !isAddingText && (
+            {items.length === 0 && !isAddingText && !isRecording && (
                 <div className="text-center py-8 border-2 border-dashed border-dark-700 rounded-lg">
                     <p className="text-dark-500 text-sm">No content added yet</p>
                     {!readOnly && <p className="text-dark-600 text-xs mt-1">Add text, files, or recordings below</p>}
@@ -198,6 +213,19 @@ const VaultContentEditor: FC<VaultContentEditorProps> = ({
                 </div>
             )}
 
+            {/* Voice Recorder */}
+            {isRecording && (
+                <div className="bg-dark-800 rounded-lg p-4 border border-red-500/50 space-y-3">
+                    <VoiceRecorder onRecordingComplete={handleRecordingComplete} />
+                    <button
+                        onClick={() => setIsRecording(false)}
+                        className="text-xs text-dark-500 hover:text-dark-300"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            )}
+
             {/* Error */}
             {error && (
                 <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
@@ -206,7 +234,7 @@ const VaultContentEditor: FC<VaultContentEditorProps> = ({
             )}
 
             {/* Add Buttons */}
-            {canAddMore && !isAddingText && (
+            {canAddMore && !isAddingText && !isRecording && (
                 <div className="flex flex-wrap gap-2">
                     <button
                         onClick={() => setIsAddingText(true)}
@@ -219,6 +247,12 @@ const VaultContentEditor: FC<VaultContentEditorProps> = ({
                         className="flex items-center gap-2 px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-sm text-dark-300 hover:border-primary-500/50 hover:text-white transition-colors"
                     >
                         <span>📁</span> Add File
+                    </button>
+                    <button
+                        onClick={() => setIsRecording(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-sm text-dark-300 hover:border-red-500/50 hover:text-white transition-colors"
+                    >
+                        <span>🎤</span> Record Audio
                     </button>
                     <input
                         ref={fileInputRef}

@@ -56,8 +56,10 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
             return;
         }
 
-        if (!formData.file && !formData.encryptedBlob) {
-            setError('No file to encrypt');
+        // Check for any content: bundleItems OR file OR encryptedBlob
+        const hasContent = (formData.bundleItems && formData.bundleItems.length > 0) || formData.file || formData.encryptedBlob;
+        if (!hasContent) {
+            setError('No content to encrypt');
             return;
         }
 
@@ -157,7 +159,7 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
                     keyInfo,
                     recipientPubkey,
                     new BN(formData.timeInterval),
-                    new BN(10_000_000), // 0.01 SOL bounty
+                    new BN(1_000_000), // 0.001 SOL bounty (~2x gas fee)
                     vaultName || 'Untitled Vault' // 10.1: Vault name
                 )
                 .accounts({
@@ -294,20 +296,20 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
                 <div className="bg-dark-900/50 rounded-lg p-4 border border-dark-600/50">
                     <div className="flex items-center justify-between mb-4">
                         <span className="text-sm font-medium text-white">Bounty Amount</span>
-                        <span className="font-mono text-primary-400 text-lg">0.01 SOL</span>
+                        <span className="font-mono text-primary-400 text-lg">0.001 SOL</span>
                     </div>
 
                     <div className="relative h-2 bg-dark-700 rounded-full mb-2">
-                        <div className="absolute left-0 top-0 h-full bg-primary-500 rounded-full w-[10%]" />
+                        <div className="absolute left-0 top-0 h-full bg-primary-500 rounded-full w-[1%]" />
                     </div>
 
                     <div className="flex justify-between text-xs text-dark-500 font-mono">
-                        <span>0.01 SOL</span>
+                        <span>0.001 SOL</span>
                         <span>0.10 SOL</span>
                     </div>
 
                     <p className="text-xs text-dark-400 mt-3 text-center">
-                        ≈ $2.00 (Covers gas + small reward for hunter)
+                        ≈ $0.20 (Covers 2x gas fee)
                     </p>
                 </div>
             </div>
