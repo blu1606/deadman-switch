@@ -17,6 +17,7 @@ export default function Header() {
         if (pathname.startsWith('/dashboard')) return 'dashboard';
         if (pathname.startsWith('/create')) return 'create';
         if (pathname.startsWith('/claim')) return 'claim';
+        if (pathname.startsWith('/archive')) return 'archive';
         return 'home'; // default
     };
 
@@ -26,6 +27,7 @@ export default function Header() {
             case 'dashboard': router.push('/dashboard'); break;
             case 'create': router.push('/create'); break;
             case 'claim': router.push('/claim'); break;
+            case 'archive': router.push('/archive'); break;
             default: router.push('/');
         }
     };

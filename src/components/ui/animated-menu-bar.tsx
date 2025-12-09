@@ -1,7 +1,7 @@
 import React from 'react';
-import { Home, LayoutDashboard, PlusCircle, Unlock, Info } from 'lucide-react';
+import { Home, LayoutDashboard, PlusCircle, Unlock, Info, Archive } from 'lucide-react';
 
-export type NavKey = 'home' | 'dashboard' | 'create' | 'claim' | 'about';
+export type NavKey = 'home' | 'dashboard' | 'create' | 'claim' | 'about' | 'archive';
 
 interface MenuBarProps {
   active?: NavKey;
@@ -13,6 +13,7 @@ const icons: Record<NavKey, React.ReactNode> = {
   dashboard: <LayoutDashboard className="w-5 h-5" />,
   create: <PlusCircle className="w-5 h-5" />,
   claim: <Unlock className="w-5 h-5" />,
+  archive: <Archive className="w-5 h-5" />,
   about: <Info className="w-5 h-5" />
 };
 
@@ -103,6 +104,7 @@ export const MenuBar = ({ active = 'home', onSelect }: MenuBarProps) => {
       <IconButton icon={icons.dashboard} label="My Vaults" active={active === 'dashboard'} onClick={() => onSelect?.('dashboard')} />
       <IconButton icon={icons.create} label="Create" active={active === 'create'} onClick={() => onSelect?.('create')} />
       <IconButton icon={icons.claim} label="Claim" active={active === 'claim'} onClick={() => onSelect?.('claim')} />
+      <IconButton icon={icons.archive} label="Archive" active={active === 'archive'} onClick={() => onSelect?.('archive')} />
     </nav>
   );
 };

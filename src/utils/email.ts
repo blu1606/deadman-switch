@@ -199,3 +199,91 @@ export async function sendRecipientNotification(
         html,
     });
 }
+
+/**
+ * C.2: Schedule vault ready notification for a future date
+ * Uses Resend's scheduledAt feature to send email at exact release time
+ */
+export async function sendScheduledVaultReady(
+    recipientEmail: string,
+    vaultAddress: string,
+    scheduledAt: Date
+): Promise<{ success: boolean; id?: string; error?: string }> {
+    if (!process.env.RESEND_API_KEY) {
+        console.log('[Email] RESEND_API_KEY not set, skipping scheduled email');
+        return { success: false, error: 'Email not configured' };
+    }
+
+    // Resend requires scheduledAt to be at least 1 minute in the future
+    const minScheduleTime = new Date(Date.now() + 60 * 1000);
+    const actualScheduleTime = scheduledAt > minScheduleTime ? scheduledAt : minScheduleTime;
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0F172A; color: #F8FAFC; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #1E293B; border-radius: 12px; padding: 30px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .alert { background: #6366F120; border: 1px solid #6366F1; border-radius: 8px; padding: 15px; margin: 20px 0; }
+        .alert-title { color: #6366F1; font-weight: bold; font-size: 18px; }
+        .info { background: #0F172A; border-radius: 8px; padding: 15px; margin: 15px 0; }
+        .btn { display: inline-block; background: linear-gradient(to right, #10B981, #059669); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 20px; }
+        .footer { text-align: center; color: #64748B; font-size: 12px; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 Deadman's Switch</h1>
+        </div>
+        
+        <div class="alert">
+            <div class="alert-title">🔓 A Vault You Subscribed To Is Now Ready!</div>
+        </div>
+        
+        <p>The vault you requested to be notified about has been released and is now available to claim.</p>
+        
+        <div class="info">
+            <p style="font-family: monospace; color: #94A3B8;">
+                Vault: ${vaultAddress.slice(0, 8)}...${vaultAddress.slice(-8)}
+            </p>
+        </div>
+        
+        <p>Connect your wallet to decrypt and access the contents.</p>
+        
+        <center>
+            <a href="${APP_URL}/claim?vault=${vaultAddress}" class="btn">🔓 Claim Now</a>
+        </center>
+        
+        <div class="footer">
+            <p>You received this because you subscribed to vault release notifications.</p>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+
+    try {
+        const { data, error } = await resend.emails.send({
+            from: FROM_EMAIL,
+            to: recipientEmail,
+            subject: '🔓 Your Subscribed Vault Is Ready to Claim!',
+            html,
+            scheduledAt: actualScheduleTime.toISOString(),
+        });
+
+        if (error) {
+            console.error('[Email] Scheduled send failed:', error);
+            return { success: false, error: error.message };
+        }
+
+        console.log(`[Email] Scheduled for ${recipientEmail} at ${actualScheduleTime.toISOString()}`);
+        return { success: true, id: data?.id };
+    } catch (err: any) {
+        console.error('[Email] Scheduled error:', err);
+        return { success: false, error: err.message };
+    }
+}
+

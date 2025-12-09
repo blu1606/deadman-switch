@@ -12,6 +12,7 @@ import VaultContentEditor from '@/components/vault/VaultContentEditor';
 import { VaultItem } from '@/types/vaultBundle';
 import VaultTimeline from './VaultTimeline';
 import { getCreatedDate } from '@/lib/utils';
+import { useClaimedVaults } from '@/hooks/useClaimedVaults';
 
 interface ClaimModalProps {
     vault: any;
@@ -24,6 +25,7 @@ type RevealState = 'input' | 'unlocking' | 'message' | 'assets';
 export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProps) {
     const { publicKey, signTransaction, signAllTransactions } = useWallet();
     const { connection } = useConnection();
+    const { addVault } = useClaimedVaults();
 
     // Form State
     const [password, setPassword] = useState('');
@@ -140,6 +142,26 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                     setRevealState('assets'); // Go directly to assets for media
                 }
             }, 2500);
+
+            // Save to Archive (C.3)
+            const summaryTypes = bundleItems
+                ? Array.from(new Set(bundleItems.map(i => i.type)))
+                : [pkg.metadata.fileType.startsWith('text') ? 'text' : pkg.metadata.fileType.startsWith('image') ? 'image' : 'file'];
+
+            addVault({
+                address: vault.publicKey.toBase58(),
+                name: vault.name || 'Untitled Vault',
+                claimedAt: Date.now(),
+                senderAddress: vault.owner.toBase58(),
+                contentSummary: {
+                    itemCount: bundleItems ? bundleItems.length : 1,
+                    totalSize: pkg.metadata.size || 0,
+                    types: summaryTypes as string[]
+                },
+                ipfsCid: vault.ipfsCid,
+                encryptedKey: vault.encryptedKey,
+                vaultSeed: vault.vaultSeed.toString('hex')
+            });
 
             onSuccess();
         } catch (err: any) {

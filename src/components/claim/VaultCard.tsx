@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import VaultSafe3D from './VaultSafe3D';
+import NotifyMeForm from './NotifyMeForm';
 
 interface VaultCardProps {
     vault: any;
@@ -60,6 +61,16 @@ export default function VaultCard({ vault, onClaim }: VaultCardProps) {
                 />
             </div>
 
+            {/* Notify Me Form for Pending Vaults (C.2) */}
+            {!canClaim && (
+                <div className="relative z-20 mt-4 w-full" onClick={(e) => e.stopPropagation()}>
+                    <NotifyMeForm
+                        vaultAddress={vault.publicKey?.toBase58() || ''}
+                        releaseTimestamp={expiry}
+                    />
+                </div>
+            )}
+
             {/* Hover Info Overlay (Optional) */}
             {!canClaim && (
                 <div className="absolute inset-x-0 bottom-4 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -71,3 +82,4 @@ export default function VaultCard({ vault, onClaim }: VaultCardProps) {
         </motion.div>
     );
 }
+

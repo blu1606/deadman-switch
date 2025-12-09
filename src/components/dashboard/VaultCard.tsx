@@ -9,6 +9,7 @@ interface VaultCardProps {
     status: VaultStatus;
     isPinging: boolean;
     isSuccess: boolean;
+    streak?: number; // Ping streak count
     onPing: () => void;
     onEdit: () => void;
     onDelegate: () => void;
@@ -20,6 +21,7 @@ const VaultCard: FC<VaultCardProps> = ({
     status,
     isPinging,
     isSuccess,
+    streak = 0,
     onPing,
     onEdit,
     onDelegate,
@@ -43,7 +45,8 @@ const VaultCard: FC<VaultCardProps> = ({
                         healthStatus={status.healthStatus}
                         isReleased={vault.isReleased}
                         size="md"
-                        showStreak={false} // TODO: Enable when ping tracking is implemented
+                        showStreak={true}
+                        streak={streak}
                     />
                 </div>
 

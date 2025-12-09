@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useOwnerVaults, VaultData } from '@/hooks/useVault';
 import { useWallet } from '@solana/wallet-adapter-react';
 import WalletButton from '@/components/wallet/WalletButton';
@@ -20,14 +20,59 @@ export default function DashboardPage() {
     const [delegatingVault, setDelegatingVault] = useState<VaultData | null>(null);
     const [bountyVault, setBountyVault] = useState<VaultData | null>(null);
 
+    // Streak tracking
+    const [streaks, setStreaks] = useState<Record<string, number>>({});
+
+    // Fetch streaks for all vaults
+    const fetchStreaks = useCallback(async () => {
+        if (vaults.length === 0) return;
+
+        const streakData: Record<string, number> = {};
+        await Promise.all(
+            vaults.map(async (vault) => {
+                try {
+                    const res = await fetch(`/api/vault/streak?vault=${vault.publicKey.toBase58()}`);
+                    const data = await res.json();
+                    streakData[vault.publicKey.toBase58()] = data.streak || 0;
+                } catch (e) {
+                    streakData[vault.publicKey.toBase58()] = 0;
+                }
+            })
+        );
+        setStreaks(streakData);
+    }, [vaults]);
+
+    useEffect(() => {
+        if (vaults.length > 0) {
+            fetchStreaks();
+        }
+    }, [vaults, fetchStreaks]);
+
     const handlePing = async (vault: VaultData) => {
-        setPingingVault(vault.publicKey.toBase58());
+        const vaultKey = vault.publicKey.toBase58();
+        setPingingVault(vaultKey);
         setPingError(null);
         setPingSuccess(null);
 
         try {
             await ping(vault);
-            setPingSuccess(vault.publicKey.toBase58());
+
+            // Update streak
+            try {
+                const res = await fetch('/api/vault/streak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vaultAddress: vaultKey })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setStreaks(prev => ({ ...prev, [vaultKey]: data.streak }));
+                }
+            } catch (e) {
+                console.error('Failed to update streak', e);
+            }
+
+            setPingSuccess(vaultKey);
             setTimeout(() => setPingSuccess(null), 3000);
         } catch (err: any) {
             setPingError(err.message || 'Failed to check in');
@@ -90,6 +135,7 @@ export default function DashboardPage() {
                                     status={status}
                                     isPinging={isPinging}
                                     isSuccess={isSuccess}
+                                    streak={streaks[key] || 0}
                                     onPing={() => handlePing(vault)}
                                     onEdit={() => setEditingVault(vault)}
                                     onDelegate={() => setDelegatingVault(vault)}
