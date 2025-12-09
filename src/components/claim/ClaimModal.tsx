@@ -13,6 +13,9 @@ import { VaultItem } from '@/types/vaultBundle';
 import VaultTimeline from './VaultTimeline';
 import { getCreatedDate } from '@/lib/utils';
 import { useClaimedVaults } from '@/hooks/useClaimedVaults';
+import { PublicKey, SystemProgram } from '@solana/web3.js';
+import { BN } from '@coral-xyz/anchor';
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from '@solana/spl-token';
 
 interface ClaimModalProps {
     vault: any;
@@ -172,11 +175,86 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
         }
     };
 
+    // State for separate claims
+    const [isClaimingSol, setIsClaimingSol] = useState(false);
+    const [isClaimingTokens, setIsClaimingTokens] = useState(false);
+    const [solClaimed, setSolClaimed] = useState(false);
+    const [tokensClaimed, setTokensClaimed] = useState(false);
+
+    const handleClaimSol = async () => {
+        if (!publicKey || !signTransaction || !signAllTransactions) return;
+        setIsClaimingSol(true);
+        try {
+            const provider = new AnchorProvider(connection, { publicKey, signTransaction, signAllTransactions }, { commitment: 'confirmed' });
+            const idl = await import('@/idl/deadmans_switch.json');
+            const program = new Program(idl as any, provider);
+
+            await (program.methods as any)
+                .claimSol()
+                .accounts({
+                    vault: vault.publicKey,
+                    recipient: publicKey,
+                    systemProgram: SystemProgram.programId,
+                })
+                .rpc();
+
+            setSolClaimed(true);
+        } catch (err: any) {
+            console.error('Claim SOL failed:', err);
+            setError(err.message || 'Failed to claim SOL');
+        } finally {
+            setIsClaimingSol(false);
+        }
+    };
+
+    const handleClaimTokens = async () => {
+        if (!publicKey || !signTransaction || !signAllTransactions) return;
+        setIsClaimingTokens(true);
+        try {
+            const provider = new AnchorProvider(connection, { publicKey, signTransaction, signAllTransactions }, { commitment: 'confirmed' });
+            const idl = await import('@/idl/deadmans_switch.json');
+            const program = new Program(idl as any, provider);
+
+            // We need the token mint. It's in the vault data (parsing logic updated).
+            // Assuming vault.tokenMint is available (parsed in useRecipientVaults -> solanaParsers)
+            if (!vault.tokenMint) throw new Error("No token mint found for this vault");
+
+            const tokenMint = new PublicKey(vault.tokenMint);
+
+            const vaultTokenAccount = await getAssociatedTokenAddress(tokenMint, vault.publicKey, true);
+            const recipientTokenAccount = await getAssociatedTokenAddress(tokenMint, publicKey);
+
+            await (program.methods as any)
+                .claimTokens()
+                .accounts({
+                    vault: vault.publicKey,
+                    recipient: publicKey,
+                    tokenMint: tokenMint,
+                    vaultTokenAccount: vaultTokenAccount,
+                    recipientTokenAccount: recipientTokenAccount,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                    systemProgram: SystemProgram.programId,
+                })
+                .rpc();
+
+            setTokensClaimed(true);
+        } catch (err: any) {
+            console.error('Claim Tokens failed:', err);
+            setError(err.message || 'Failed to claim tokens');
+        } finally {
+            setIsClaimingTokens(false);
+        }
+    };
+
     const handleClaimAndClose = async () => {
         if (!publicKey || !signTransaction || !signAllTransactions) {
             setError('Wallet not connected');
             return;
         }
+
+        // Prevent closing if assets are not claimed yet? 
+        // Ideally yes, but let's leave it to user discretion or warning.
 
         setIsClosing(true);
         setError(null);
@@ -502,30 +580,57 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                                 )}
 
                                 {/* Actions */}
-                                <div className="flex gap-3 mt-6">
-                                    <button onClick={downloadFile} className="flex-1 btn-primary">
-                                        ⬇️ Download
-                                    </button>
+                                <div className="flex flex-col gap-3 mt-6">
+                                    <div className="flex gap-3">
+                                        <button onClick={downloadFile} className="flex-1 btn-primary">
+                                            ⬇️ Download Data
+                                        </button>
+                                    </div>
+
+                                    {/* T.3 Unified Claim Options */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {/* Claim SOL */}
+                                        {vault.lockedLamports && new BN(vault.lockedLamports).gt(new BN(0)) && (
+                                            <button
+                                                onClick={handleClaimSol}
+                                                disabled={isClaimingSol || solClaimed || vaultClosed}
+                                                className={`btn-secondary text-sm ${solClaimed ? 'bg-green-500/10 text-green-400 border-green-500/50' : ''}`}
+                                            >
+                                                {isClaimingSol ? 'Claiming SOL...' : solClaimed ? 'SOL Claimed ✅' : `Claim ${(new BN(vault.lockedLamports).toNumber() / 1e9).toFixed(2)} SOL`}
+                                            </button>
+                                        )}
+
+                                        {/* Claim Tokens */}
+                                        {vault.lockedTokens && new BN(vault.lockedTokens).gt(new BN(0)) && (
+                                            <button
+                                                onClick={handleClaimTokens}
+                                                disabled={isClaimingTokens || tokensClaimed || vaultClosed}
+                                                className={`btn-secondary text-sm ${tokensClaimed ? 'bg-green-500/10 text-green-400 border-green-500/50' : ''}`}
+                                            >
+                                                {isClaimingTokens ? 'Claiming...' : tokensClaimed ? 'Tokens Claimed ✅' : `Claim Tokens`}
+                                            </button>
+                                        )}
+                                    </div>
 
                                     {!vaultClosed && (
                                         <button
                                             onClick={handleClaimAndClose}
                                             disabled={isClosing}
-                                            className="flex-1 btn-secondary text-yellow-400 border-yellow-500/50 hover:bg-yellow-500/10 disabled:opacity-50"
+                                            className="w-full btn-secondary text-yellow-400 border-yellow-500/50 hover:bg-yellow-500/10 disabled:opacity-50 text-sm"
                                         >
                                             {isClosing ? (
                                                 <span className="flex items-center justify-center gap-2">
                                                     <div className="w-4 h-4 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full animate-spin" />
-                                                    Claiming...
+                                                    Closing...
                                                 </span>
                                             ) : (
-                                                '💰 Claim Rent'
+                                                '🗑️ Close Vault & Reclaim Rent'
                                             )}
                                         </button>
                                     )}
 
-                                    <button onClick={closeModal} className="btn-secondary px-4">
-                                        ✕
+                                    <button onClick={closeModal} className="text-dark-400 text-sm hover:text-white mt-2">
+                                        Close Window
                                     </button>
                                 </div>
                             </motion.div>

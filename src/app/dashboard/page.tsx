@@ -7,6 +7,7 @@ import WalletButton from '@/components/wallet/WalletButton';
 import EditVaultModal from '@/components/dashboard/EditVaultModal';
 import DelegateModal from '@/components/dashboard/DelegateModal';
 import TopUpBountyModal from '@/components/dashboard/TopUpBountyModal';
+import LockTokensModal from '@/components/dashboard/LockTokensModal';
 import VaultCard from '@/components/dashboard/VaultCard';
 
 export default function DashboardPage() {
@@ -19,6 +20,7 @@ export default function DashboardPage() {
     const [editingVault, setEditingVault] = useState<VaultData | null>(null);
     const [delegatingVault, setDelegatingVault] = useState<VaultData | null>(null);
     const [bountyVault, setBountyVault] = useState<VaultData | null>(null);
+    const [lockingVault, setLockingVault] = useState<VaultData | null>(null);
 
     // Streak tracking
     const [streaks, setStreaks] = useState<Record<string, number>>({});
@@ -140,6 +142,7 @@ export default function DashboardPage() {
                                     onEdit={() => setEditingVault(vault)}
                                     onDelegate={() => setDelegatingVault(vault)}
                                     onTopUp={() => setBountyVault(vault)}
+                                    onLockTokens={() => setLockingVault(vault)}
                                 />
                             );
                         })}
@@ -199,6 +202,18 @@ export default function DashboardPage() {
                     onClose={() => setBountyVault(null)}
                     onSuccess={() => {
                         setBountyVault(null);
+                        refetch();
+                    }}
+                />
+            )}
+
+            {lockingVault && (
+                <LockTokensModal
+                    vaultAddress={lockingVault.publicKey}
+                    existingMint={lockingVault.tokenMint ? new (require('@solana/web3.js')).PublicKey(lockingVault.tokenMint) : undefined}
+                    onClose={() => setLockingVault(null)}
+                    onSuccess={() => {
+                        setLockingVault(null);
                         refetch();
                     }}
                 />

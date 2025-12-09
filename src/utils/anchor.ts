@@ -43,6 +43,9 @@ export interface VaultAccount {
     lastCheckIn: bigint;
     isReleased: boolean;
     bump: number;
+    lockedLamports: BN;
+    tokenMint: PublicKey | null;
+    lockedTokens: BN;
 }
 
 // Helper to calculate time until expiry

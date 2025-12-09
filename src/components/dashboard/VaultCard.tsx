@@ -4,6 +4,8 @@ import { truncateAddress, formatTimeRemaining } from '@/lib/utils';
 import HoldCheckInButton from './HoldCheckInButton';
 import KeeperSpirit from './KeeperSpirit';
 
+import { BN } from '@coral-xyz/anchor';
+
 interface VaultCardProps {
     vault: VaultData;
     status: VaultStatus;
@@ -14,6 +16,7 @@ interface VaultCardProps {
     onEdit: () => void;
     onDelegate: () => void;
     onTopUp: () => void;
+    onLockTokens: () => void;
 }
 
 const VaultCard: FC<VaultCardProps> = ({
@@ -25,7 +28,8 @@ const VaultCard: FC<VaultCardProps> = ({
     onPing,
     onEdit,
     onDelegate,
-    onTopUp
+    onTopUp,
+    onLockTokens
 }) => {
     const key = vault.publicKey.toBase58();
 
@@ -76,6 +80,30 @@ const VaultCard: FC<VaultCardProps> = ({
                         </div>
                     </div>
 
+                    {/* Locked Assets Display (T.1 & T.2) */}
+                    {(vault.lockedLamports.gt(new BN(0)) || vault.lockedTokens.gt(new BN(0))) && (
+                        <div className="flex items-center justify-between bg-dark-900/50 p-3 rounded-lg border border-dark-700/50 mb-6">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xl">💰</span>
+                                <div>
+                                    <div className="text-[10px] text-dark-500 uppercase tracking-wider">Locked Assets</div>
+                                    <div className="flex flex-col">
+                                        {vault.lockedLamports.gt(new BN(0)) && (
+                                            <span className="font-mono text-white text-sm">
+                                                {(vault.lockedLamports.toNumber() / 1_000_000_000).toFixed(3)} SOL
+                                            </span>
+                                        )}
+                                        {vault.lockedTokens.gt(new BN(0)) && (
+                                            <span className="font-mono text-primary-400 text-sm">
+                                                {vault.lockedTokens.toString()} Tokens
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Bounty Display */}
                     <div className="flex items-center justify-between bg-dark-900/50 p-3 rounded-lg border border-dark-700/50 mb-6">
                         <div className="flex items-center gap-2">
@@ -92,6 +120,14 @@ const VaultCard: FC<VaultCardProps> = ({
                             Top Up
                         </button>
                     </div>
+
+                    {/* Add Tokens Button (New T.2) */}
+                    <button
+                        onClick={onLockTokens}
+                        className="w-full mb-6 py-2 border border-dashed border-dark-600 hover:border-primary-500/50 hover:bg-primary-500/5 text-dark-400 hover:text-primary-400 rounded-lg text-xs transition-colors flex items-center justify-center gap-2"
+                    >
+                        <span>💎</span> Check & Lock SPL Tokens
+                    </button>
 
                     {/* Action Area */}
                     {!vault.isReleased && (

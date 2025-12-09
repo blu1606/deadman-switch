@@ -33,6 +33,9 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
     const [ownerEmail, setOwnerEmail] = useState('');
     const [recipientEmail, setRecipientEmail] = useState('');
 
+    // Locked SOL state
+    const [lockedSol, setLockedSol] = useState<number>(0);
+
     const formatInterval = (seconds: number): string => {
         const days = Math.floor(seconds / (24 * 60 * 60));
         if (days >= 365) return `${Math.floor(days / 365)} year`;
@@ -161,7 +164,7 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
                     new BN(formData.timeInterval),
                     new BN(1_000_000), // 0.001 SOL bounty (~2x gas fee)
                     vaultName || 'Untitled Vault', // 10.1: Vault name
-                    new BN(0) // T.1: locked_lamports (default 0, UI coming soon)
+                    new BN(lockedSol * 1_000_000_000) // T.1: locked_lamports (SOL -> lamports)
                 )
                 .accounts({
                     vault: vaultPda,
@@ -280,6 +283,38 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
                             <p className="font-medium">{formatInterval(formData.timeInterval)}</p>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* Lock SOL (T.1) */}
+            <div className="bg-dark-800 rounded-lg p-4 border border-dark-700 space-y-4">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                    <span className="text-xl">💰</span>
+                    Lock Asset (Phase 1: SOL Only)
+                </h3>
+                <p className="text-sm text-dark-400">
+                    Optionally lock SOL in the vault. The recipient can claim this amount ONLY after the vault is released.
+                </p>
+
+                <div className="bg-dark-900/50 rounded-lg p-4 border border-dark-600/50">
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium text-white">Amount (SOL)</label>
+                        <span className="text-xs text-dark-400">Balance: ...</span>
+                    </div>
+                    <div className="relative">
+                        <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            onChange={(e) => setLockedSol(parseFloat(e.target.value) || 0)}
+                            className="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-white font-mono focus:border-primary-500 focus:outline-none transition-colors"
+                        />
+                        <span className="absolute right-4 top-3 text-dark-400 font-mono">SOL</span>
+                    </div>
+                    <p className="text-xs text-dark-500 mt-2">
+                        This amount will be transferred from your wallet to the vault upon creation.
+                    </p>
                 </div>
             </div>
 

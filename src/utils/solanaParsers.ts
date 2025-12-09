@@ -16,6 +16,9 @@ export interface VaultData {
     delegate?: PublicKey | null;
     bountyLamports: BN; // Added: bounty for release trigger
     name: string; // 10.1: vault name
+    lockedLamports: BN; // T.1
+    tokenMint?: PublicKey | null; // T.2
+    lockedTokens: BN; // T.2
 }
 
 export function parseVaultAccount(pubkey: PublicKey, data: Buffer): VaultData {
@@ -76,6 +79,31 @@ export function parseVaultAccount(pubkey: PublicKey, data: Buffer): VaultData {
         }
     }
 
+    // locked_lamports: u64 (New T.1)
+    let lockedLamports = new BN(0);
+    if (offset + 8 <= data.length) {
+        lockedLamports = new BN(data.slice(offset, offset + 8), 'le');
+        offset += 8;
+    }
+
+    // token_mint: Option<Pubkey> (New T.2)
+    let tokenMint: PublicKey | null = null;
+    if (offset + 1 <= data.length) {
+        const hasTokenMint = data[offset] === 1;
+        offset += 1;
+        if (hasTokenMint && offset + 32 <= data.length) {
+            tokenMint = new PublicKey(data.slice(offset, offset + 32));
+            offset += 32;
+        }
+    }
+
+    // locked_tokens: u64 (New T.2)
+    let lockedTokens = new BN(0);
+    if (offset + 8 <= data.length) {
+        lockedTokens = new BN(data.slice(offset, offset + 8), 'le');
+        offset += 8;
+    }
+
     return {
         publicKey: pubkey,
         owner,
@@ -89,7 +117,10 @@ export function parseVaultAccount(pubkey: PublicKey, data: Buffer): VaultData {
         bump,
         delegate,
         bountyLamports,
-        name
+        name,
+        lockedLamports,
+        tokenMint,
+        lockedTokens
     };
 }
 
