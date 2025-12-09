@@ -91,7 +91,7 @@ export default function DashboardPage() {
                     </div>
                 ) : vaults.length > 0 ? (
                     <div className="grid gap-8">
-                        {vaults.map((vault) => {
+                        {vaults.filter((vault) => !getStatus(vault).isExpired).map((vault) => {
                             const status = getStatus(vault);
                             const key = vault.publicKey.toBase58();
                             const isPinging = pingingVault === key;
