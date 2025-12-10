@@ -235,7 +235,8 @@ export async function decryptFile(
  */
 export async function createPasswordProtectedVaultPackage(
     file: File,
-    password: string
+    password: string,
+    hint?: string // Added hint support
 ): Promise<{ blob: Blob }> {
     // 1. Generate random vault key
     const vaultKey = await generateAESKey();
@@ -252,6 +253,7 @@ export async function createPasswordProtectedVaultPackage(
         fileType: file.type,
         fileSize: file.size,
         encryptedAt: new Date().toISOString(),
+        hint, // Save hint in metadata (unencrypted)
     };
 
     // 5. Package everything

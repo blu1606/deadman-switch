@@ -8,6 +8,8 @@ import { VaultFormData } from '@/types/vaultForm';
 import { uploadToIPFSWithRetry } from '@/utils/ipfs';
 import { getVaultPDA } from '@/utils/anchor';
 import { createEmptyBundle, bundleToBlob } from '@/utils/vaultBundle';
+import { scanForSecrets, ScanResult } from '@/utils/safetyScanner';
+import SecurityAlertModal from '@/components/ui/SecurityAlertModal';
 
 interface Props {
     formData: VaultFormData;
@@ -35,6 +37,19 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
 
     // Locked SOL state
     const [lockedSol, setLockedSol] = useState<number>(0);
+
+    // Anti-Doxxer: Security alert state
+    const [securityAlert, setSecurityAlert] = useState<{
+        isOpen: boolean;
+        result: ScanResult;
+    }>({ isOpen: false, result: { detected: false } });
+
+    const handleVaultNameBlur = (value: string) => {
+        const result = scanForSecrets(value);
+        if (result.detected) {
+            setSecurityAlert({ isOpen: true, result });
+        }
+    };
 
     const formatInterval = (seconds: number): string => {
         const days = Math.floor(seconds / (24 * 60 * 60));
@@ -121,7 +136,8 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
                     const { createPasswordProtectedVaultPackage } = await import('@/utils/crypto');
                     const result = await createPasswordProtectedVaultPackage(
                         fileToEncrypt,
-                        formData.password
+                        formData.password,
+                        formData.passwordHint // Pass the hint
                     );
                     blobToUpload = result.blob;
                 }
@@ -229,6 +245,7 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
                     maxLength={32}
                     value={vaultName}
                     onChange={(e) => setVaultName(e.target.value)}
+                    onBlur={(e) => handleVaultNameBlur(e.target.value)}
                     className="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-white focus:border-primary-500 focus:outline-none transition-colors"
                 />
                 <p className="text-xs text-dark-500 mt-1">Give your vault a memorable name</p>
@@ -462,6 +479,19 @@ const StepConfirm: FC<Props> = ({ formData, onBack, onSuccess }) => {
                     {status === 'idle' || status === 'error' ? '🔐 Create Vault' : 'Processing...'}
                 </button>
             </div>
+
+            {/* Anti-Doxxer: Security Alert Modal */}
+            {securityAlert.result.detected && (
+                <SecurityAlertModal
+                    isOpen={securityAlert.isOpen}
+                    onClose={() => setSecurityAlert({ ...securityAlert, isOpen: false })}
+                    secretType={securityAlert.result.type!}
+                    secretName={securityAlert.result.name!}
+                    suggestion={securityAlert.result.suggestion!}
+                    fieldName="Vault Name"
+                    onIgnore={() => setSecurityAlert({ ...securityAlert, isOpen: false })}
+                />
+            )}
         </div>
     );
 };

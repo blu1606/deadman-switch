@@ -55,13 +55,35 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
     const [displayedText, setDisplayedText] = useState('');
     const [showContinue, setShowContinue] = useState(false);
 
+    // IPFS Data State
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [ipfsData, setIpfsData] = useState<any | null>(null);
+    const [loadingMetadata, setLoadingMetadata] = useState(false);
+
     // Gasless Claim Detection (Premium Feature)
     const isGaslessEligible = vault?.gasTank && new BN(vault.gasTank).gt(new BN(0));
 
-    // Detect encryption mode
+    // Detect encryption mode and FETCH METADATA EARLY
     useEffect(() => {
         if (vault?.encryptedKey) {
             setEncryptionMode(vault.encryptedKey.startsWith('wallet:') ? 'wallet' : 'password');
+        }
+
+        // Fetch IPFS data immediately to get hint and metadata
+        if (vault?.ipfsCid) {
+            setLoadingMetadata(true);
+            import('@/utils/ipfs').then(({ fetchJSONFromIPFS }) => {
+                fetchJSONFromIPFS(vault.ipfsCid)
+                    .then(data => {
+                        setIpfsData(data);
+                        setLoadingMetadata(false);
+                    })
+                    .catch(err => {
+                        console.error("Failed to load vault metadata:", err);
+                        // Don't block UI, just fail silently or show retry
+                        setLoadingMetadata(false);
+                    });
+            });
         }
     }, [vault]);
 
@@ -98,9 +120,13 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
         setError(null);
 
         try {
-            const encryptedBlob = await fetchFromIPFS(vault.ipfsCid);
-            const packageText = await encryptedBlob.text();
-            const pkg = JSON.parse(packageText);
+            // Use cached data or fetch if missing
+            let pkg = ipfsData;
+            if (!pkg) {
+                const encryptedBlob = await fetchFromIPFS(vault.ipfsCid);
+                const packageText = await encryptedBlob.text();
+                pkg = JSON.parse(packageText);
+            }
 
             let vaultKey;
 
@@ -111,7 +137,14 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                 const wrapper: WrappedKeyData = pkg.keyWrapper;
                 vaultKey = await unwrapKeyWithPassword(wrapper, password);
             } else {
-                throw new Error('Unsupported vault format.');
+                // Version 1 fallback or error
+                if (pkg.encryptedFile && !pkg.keyWrapper && !pkg.walletKey) {
+                    // Legacy v1? Assuming password passed directly or unsupported
+                    // For now throw error as we moved to v2/v3
+                    // Attempt v2 fallback if structure matches
+                    throw new Error('Unsupported vault version (legacy).');
+                }
+                throw new Error('Unknown vault format.');
             }
 
             const encryptedFile: EncryptedData = pkg.encryptedFile;
@@ -259,14 +292,29 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
         }
     };
 
+    // Pre-calculate eligibility for closing vault
+    const now = Math.floor(Date.now() / 1000);
+    const expiryTime = vault.lastCheckIn.toNumber() + vault.timeInterval.toNumber();
+    const isExpiredOrReleased = now > expiryTime || vault.isReleased;
+    const isRecipient = publicKey?.toBase58() === vault.recipient.toBase58();
+    const canClose = isExpiredOrReleased && isRecipient;
+
     const handleClaimAndClose = async () => {
         if (!publicKey || !signTransaction || !signAllTransactions) {
             setError('Wallet not connected');
             return;
         }
 
-        // Prevent closing if assets are not claimed yet? 
-        // Ideally yes, but let's leave it to user discretion or warning.
+        // Pre-flight validation
+        if (!isExpiredOrReleased) {
+            setError('Vault has not expired yet. Cannot close until the timer runs out.');
+            return;
+        }
+
+        if (!isRecipient) {
+            setError('Only the designated recipient can close this vault.');
+            return;
+        }
 
         setIsClosing(true);
         setError(null);
@@ -295,7 +343,20 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             console.error('Close failed:', err);
-            setError(err.message || 'Failed to close vault');
+
+            // Parse Anchor error for user-friendly message
+            let errorMessage = 'Failed to close vault';
+            const errorString = err.toString();
+
+            if (errorString.includes('6000') || errorString.includes('Unauthorized')) {
+                errorMessage = 'Only the designated recipient can close this vault.';
+            } else if (errorString.includes('6001') || errorString.includes('NotExpired')) {
+                errorMessage = 'Vault has not expired yet. Please wait until the timer runs out.';
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+
+            setError(errorMessage);
         } finally {
             setIsClosing(false);
         }
@@ -415,32 +476,67 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                                     </div>
                                 )}
 
-                                {/* Encryption Mode Info */}
-                                <div className="mb-6">
-                                    {encryptionMode === 'wallet' ? (
-                                        <div className="bg-primary-500/10 border border-primary-500/30 rounded-xl p-4 text-center">
-                                            <div className="text-3xl mb-2">🔑</div>
-                                            <p className="text-primary-400 font-medium">Wallet-Protected Vault</p>
-                                            <p className="text-dark-400 text-sm mt-1">
-                                                No password needed. Your wallet will decrypt automatically.
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div>
-                                            <label className="block text-xs font-medium text-dark-300 mb-2 uppercase tracking-wider">
-                                                Vault Password
-                                            </label>
-                                            <input
-                                                type="password"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleClaim()}
-                                                className="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                                                placeholder="Enter password to unlock..."
-                                            />
-                                        </div>
-                                    )}
-                                </div>
+                                {/* Loading Metadata */}
+                                {loadingMetadata && (
+                                    <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                                        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                                        <p className="text-dark-400 text-sm">Fetching vault security data...</p>
+                                    </div>
+                                )}
+
+                                {/* Encryption Mode Info - Only show when loaded */}
+                                {!loadingMetadata && (
+                                    <div className="mb-6 animate-fade-in">
+                                        {encryptionMode === 'wallet' ? (
+                                            <div className="bg-primary-500/10 border border-primary-500/30 rounded-xl p-6 text-center">
+                                                <div className="text-4xl mb-4 bg-primary-500/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto">🔑</div>
+                                                <h3 className="text-xl font-bold text-white mb-2">Wallet Protected</h3>
+                                                <p className="text-primary-200">
+                                                    This vault is secured by your wallet address.
+                                                </p>
+                                                <div className="mt-4 inline-block px-3 py-1 bg-dark-900/50 rounded-full text-xs font-mono text-dark-300">
+                                                    {truncateAddress(publicKey ? publicKey.toBase58() : '...')}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                <div className="text-center mb-6">
+                                                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-dark-800 border border-dark-700 mb-3">
+                                                        <span className="text-2xl">🔒</span>
+                                                    </div>
+                                                    <h3 className="text-lg font-medium text-white">Enter Password</h3>
+                                                    <p className="text-dark-400 text-sm">
+                                                        The owner set a password for this vault.
+                                                    </p>
+                                                </div>
+
+                                                <div className="relative">
+                                                    <input
+                                                        type="password"
+                                                        value={password}
+                                                        onChange={(e) => setPassword(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleClaim()}
+                                                        className="w-full bg-dark-900/80 border border-dark-600 rounded-xl px-4 py-4 text-center text-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all placeholder:text-dark-600"
+                                                        placeholder="••••••••••••"
+                                                        autoFocus
+                                                    />
+                                                </div>
+
+                                                {/* Password Hint Display */}
+                                                {ipfsData?.metadata?.hint && (
+                                                    <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3 text-center">
+                                                        <span className="text-xs text-yellow-500/70 font-bold uppercase tracking-wider block mb-1">
+                                                            💡 Hint
+                                                        </span>
+                                                        <p className="text-yellow-200/90 text-sm font-medium">
+                                                            &quot;{ipfsData.metadata.hint}&quot;
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Error */}
                                 {error && (
@@ -645,8 +741,12 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                                     {!vaultClosed && (
                                         <button
                                             onClick={handleClaimAndClose}
-                                            disabled={isClosing}
-                                            className="w-full btn-secondary text-yellow-400 border-yellow-500/50 hover:bg-yellow-500/10 disabled:opacity-50 text-sm"
+                                            disabled={isClosing || !canClose}
+                                            className={`w-full btn-secondary disabled:opacity-50 text-sm ${canClose
+                                                    ? 'text-yellow-400 border-yellow-500/50 hover:bg-yellow-500/10'
+                                                    : 'text-dark-500 border-dark-600 cursor-not-allowed'
+                                                }`}
+                                            title={!canClose ? (!isExpiredOrReleased ? 'Vault must be expired or released to close' : 'Only the recipient can close this vault') : undefined}
                                         >
                                             {isClosing ? (
                                                 <span className="flex items-center justify-center gap-2">
@@ -670,4 +770,8 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
             </motion.div >
         </div >
     );
+}
+
+function truncateAddress(address: string): string {
+    return `${address.slice(0, 4)}...${address.slice(-4)}`;
 }

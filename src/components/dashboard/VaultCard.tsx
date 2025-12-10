@@ -40,9 +40,24 @@ const VaultCard: FC<VaultCardProps> = ({
     const { connection } = useConnection();
     const key = vault.publicKey.toBase58();
 
-    // Calculate precise health % for Kip
     const totalTime = vault.timeInterval.toNumber();
-    const remaining = Math.max(0, status.timeRemaining);
+
+    // Real-time countdown state
+    const [remaining, setRemaining] = useState(Math.max(0, status.timeRemaining));
+
+    // Update remaining every second for real-time UI
+    useEffect(() => {
+        setRemaining(Math.max(0, status.timeRemaining)); // Sync with prop
+
+        if (vault.isReleased || status.timeRemaining <= 0) return;
+
+        const interval = setInterval(() => {
+            setRemaining(prev => Math.max(0, prev - 1));
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [status.timeRemaining, vault.isReleased]);
+
     const healthPercent = totalTime > 0 ? Math.min(100, Math.max(0, (remaining / totalTime) * 100)) : 0;
 
     const [isCharging, setIsCharging] = useState(false);
@@ -67,6 +82,8 @@ const VaultCard: FC<VaultCardProps> = ({
 
     const formatLabel = (seconds: number) => {
         if (seconds <= 0) return "EXPIRED";
+        if (seconds < 60) return `${seconds}s`;
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
         const d = Math.floor(seconds / (3600 * 24));
         const h = Math.floor((seconds % (3600 * 24)) / 3600);
         return `${d}d ${h}h`;

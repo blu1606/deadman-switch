@@ -14,40 +14,37 @@ export const KIP_MESSAGES = {
         "The timeline has been fulfilled. Access granted.",
     ],
     CREATING: {
-        STEP_1: [ // Name & File
+        STEP_1: [ // Upload Secret
             "Upload any file - image, text, anything. I'll encrypt it with AES-256.",
             "This is the start of something permanent. What do you want to leave behind?",
             "Your file will be encrypted locally before it ever leaves your device.",
             "Secure your most important documents here. I'll keep them safe.",
-            "Name your vault. Make it something memorable.",
         ],
-        STEP_2: [ // Recipient
+        STEP_2: [ // Beneficiary
             "Who should inherit this? Only they can unlock it with their wallet.",
             "Choose wisely. This person will be the guardian of your legacy.",
             "The decryption key will be locked in a Solana smart contract.",
             "Ensure you have the correct wallet address. Algorithms don't forgive typos.",
             "You're trusting them with your digital life. Good choice?",
         ],
-        STEP_3: [ // Timer & Settings
+        STEP_3: [ // Anti-Theft Protocol
+            "What if someone forces you? Toggle Silent Alarm for emergency duress.",
+            "The 5-second hold triggers a secret alert. Attackers see nothing suspicious.",
+            "Your emergency contacts will be notified. Location recorded.",
+            "This is your fail-safe against coercion. Use it wisely.",
+        ],
+        STEP_4: [ // Timer
             "How often should I check on you? Set a realistic interval.",
             "The Deadman's Switch: No check-in = protocol execution.",
-            "What if someone forces you? Toggle Silent Alarm for emergency duress.",
-            "Customize your spirit. I'll reflect the health of your vault.",
             "Silence is the trigger. Decide how long silence must last.",
+            "Real vaults use 30-365 days. Demo uses 10 seconds.",
         ],
-        STEP_4: [ // Review
+        STEP_5: [ // Deploy
             "Double-check everything. Blockchain transactions are immutable.",
             "Look good? Once deployed, the logic is set in stone.",
             "This is your last chance to verify the recipient address.",
             "We are about to write to the Solana blockchain. Ready?",
-            "Review your legacy parameters. Precision is key.",
-        ],
-        STEP_5: [ // Success
-            "Ready to deploy! Your vault will be immutable on Solana.",
             "Deploying contract... Your legacy is being secured.",
-            "Success! The Switch is active. Don't forget to check in.",
-            "Immutable. Unstoppable. Your legacy is officially on-chain.",
-            "I'll be watching the timeline. Stay safe out there.",
         ],
     },
     LIVE: {

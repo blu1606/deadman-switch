@@ -1,11 +1,13 @@
 'use client';
 
-import { FC } from 'react';
+import { FC, useState } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import { useEditVault } from '@/hooks/useEditVault';
 import DuressSettings from './DuressSettings';
 import MagicLinkSettings from './MagicLinkSettings';
+import { scanForSecrets, ScanResult } from '@/utils/safetyScanner';
+import SecurityAlertModal from '@/components/ui/SecurityAlertModal';
 
 interface EditVaultModalProps {
     vault: {
@@ -39,6 +41,19 @@ const EditVaultModal: FC<EditVaultModalProps> = ({ vault, onClose, onSuccess }) 
         handleUpdate
     } = useEditVault({ vault, onSuccess });
 
+    // Anti-Doxxer: Security alert state
+    const [securityAlert, setSecurityAlert] = useState<{
+        isOpen: boolean;
+        result: ScanResult;
+    }>({ isOpen: false, result: { detected: false } });
+
+    const handleVaultNameBlur = (value: string) => {
+        const result = scanForSecrets(value);
+        if (result.detected) {
+            setSecurityAlert({ isOpen: true, result });
+        }
+    };
+
     // Helper for magic link init state
     const magicLinkInitState = (() => {
         if (typeof window !== 'undefined') {
@@ -71,6 +86,7 @@ const EditVaultModal: FC<EditVaultModalProps> = ({ vault, onClose, onSuccess }) 
                                     type="text"
                                     value={vaultName}
                                     onChange={(e) => setVaultName(e.target.value)}
+                                    onBlur={(e) => handleVaultNameBlur(e.target.value)}
                                     maxLength={32}
                                     className="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-white"
                                     placeholder="My Vault"
@@ -155,6 +171,19 @@ const EditVaultModal: FC<EditVaultModalProps> = ({ vault, onClose, onSuccess }) 
                     </>
                 )}
             </div>
+
+            {/* Anti-Doxxer: Security Alert Modal */}
+            {securityAlert.result.detected && (
+                <SecurityAlertModal
+                    isOpen={securityAlert.isOpen}
+                    onClose={() => setSecurityAlert({ ...securityAlert, isOpen: false })}
+                    secretType={securityAlert.result.type!}
+                    secretName={securityAlert.result.name!}
+                    suggestion={securityAlert.result.suggestion!}
+                    fieldName="Vault Name"
+                    onIgnore={() => setSecurityAlert({ ...securityAlert, isOpen: false })}
+                />
+            )}
         </div>
     );
 };

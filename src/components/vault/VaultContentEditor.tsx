@@ -4,6 +4,8 @@ import { FC, useState, useRef } from 'react';
 import { VaultItem, BUNDLE_LIMITS } from '@/types/vaultBundle';
 import { fileToVaultItem, textToVaultItem, getItemIcon, formatFileSize } from '@/utils/vaultBundle';
 import VoiceRecorder from './VoiceRecorder';
+import { scanForSecrets, ScanResult } from '@/utils/safetyScanner';
+import SecurityAlertModal from '@/components/ui/SecurityAlertModal';
 
 interface VaultContentEditorProps {
     items: VaultItem[];
@@ -23,6 +25,20 @@ const VaultContentEditor: FC<VaultContentEditorProps> = ({
     const [textName, setTextName] = useState('');
     const [textContent, setTextContent] = useState('');
     const [error, setError] = useState<string | null>(null);
+
+    // Anti-Doxxer: Security alert state
+    const [securityAlert, setSecurityAlert] = useState<{
+        isOpen: boolean;
+        result: ScanResult;
+        fieldName: string;
+    }>({ isOpen: false, result: { detected: false }, fieldName: '' });
+
+    const handleSecurityScan = (text: string, fieldName: string) => {
+        const result = scanForSecrets(text);
+        if (result.detected) {
+            setSecurityAlert({ isOpen: true, result, fieldName });
+        }
+    };
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const totalSize = items.reduce((sum, i) => sum + i.size, 0);
@@ -186,6 +202,7 @@ const VaultContentEditor: FC<VaultContentEditorProps> = ({
                         placeholder="Note title"
                         value={textName}
                         onChange={(e) => setTextName(e.target.value)}
+                        onBlur={(e) => handleSecurityScan(e.target.value, 'Note Title')}
                         className="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-white text-sm"
                         maxLength={50}
                     />
@@ -193,6 +210,7 @@ const VaultContentEditor: FC<VaultContentEditorProps> = ({
                         placeholder="Write your message..."
                         value={textContent}
                         onChange={(e) => setTextContent(e.target.value)}
+                        onBlur={(e) => handleSecurityScan(e.target.value, 'Note Content')}
                         className="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-white text-sm resize-none"
                         rows={4}
                         maxLength={BUNDLE_LIMITS.maxTextLength}
@@ -272,6 +290,19 @@ const VaultContentEditor: FC<VaultContentEditorProps> = ({
                 <p className="text-xs text-dark-500 text-center">
                     Maximum capacity reached
                 </p>
+            )}
+
+            {/* Anti-Doxxer: Security Alert Modal */}
+            {securityAlert.result.detected && (
+                <SecurityAlertModal
+                    isOpen={securityAlert.isOpen}
+                    onClose={() => setSecurityAlert({ ...securityAlert, isOpen: false })}
+                    secretType={securityAlert.result.type!}
+                    secretName={securityAlert.result.name!}
+                    suggestion={securityAlert.result.suggestion!}
+                    fieldName={securityAlert.fieldName}
+                    onIgnore={() => setSecurityAlert({ ...securityAlert, isOpen: false })}
+                />
             )}
         </div>
     );
