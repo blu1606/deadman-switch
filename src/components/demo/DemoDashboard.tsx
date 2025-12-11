@@ -7,6 +7,7 @@ import { DemoState, UploadedFileInfo } from '@/hooks/useDemoVault';
 import confetti from 'canvas-confetti';
 import KipAvatar from '@/components/brand/KipAvatar';
 import HoldCheckInButton from '@/components/dashboard/HoldCheckInButton';
+import StreakCounter from '@/components/kip/StreakCounter';
 import { useEffect, useState } from 'react';
 
 interface DemoDashboardProps {
@@ -163,6 +164,7 @@ export default function DemoDashboard({
                         <motion.div
                             animate={isDying ? { y: [0, -3, 0] } : {}}
                             transition={{ duration: 0.5, repeat: isDying ? Infinity : 0 }}
+                            className="relative"
                         >
                             <KipAvatar
                                 seed="vault-dashboard"
@@ -171,6 +173,12 @@ export default function DemoDashboard({
                                 showGlow={true}
                                 className={isDying ? 'animate-pulse' : ''}
                             />
+                            {/* Streak Counter (Gamification) */}
+                            {!isDying && !isReleased && (
+                                <div className="absolute -top-2 -right-12 bg-dark-900/80 backdrop-blur-sm p-1 rounded-lg border border-orange-500/20 shadow-lg scale-90">
+                                    <StreakCounter count={3} />
+                                </div>
+                            )}
                         </motion.div>
                         <div>
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">

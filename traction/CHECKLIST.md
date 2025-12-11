@@ -36,7 +36,6 @@
 ### Phase 8: Growth & Conversion ✅ 100%
 - [x] 8.1 SEO & Metadata
 - [x] 8.2 Conversion Simulator
-- [x] 8.2 Conversion Simulator
 - [x] 8.3 Flash Onboarding (Demo Mode)
 - [x] 8.4 Hybrid Landing Page (General Audience)
 
@@ -140,8 +139,6 @@
 - 6.4 Council of Guardians
 - 7.3 Email Magic Link
 - 6.3 Dynamic NFT / Metaplex
-- 6.1 Solana Blinks
-- 6.1 Solana Blinks
 - 6.1 Solana Blinks
 - 12.2 Multi-Recipient Vault
 - **14.1 Telegram "Guardian" Bot** (Check-in via DM)

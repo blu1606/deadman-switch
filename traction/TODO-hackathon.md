@@ -1,6 +1,6 @@
 # 📋 Hackathon To-Do: Optimized Execution Order
 
-> **Updated:** 2025-12-11T13:58
+> **Updated:** 2025-12-11T14:35
 > **Goal:** Ship demo-ready features in optimal order
 > **Model Guide:** 🎨 Gemini = UI/UX | ⚡ Claude = Logic | 🛡️ Opus = Critical
 
@@ -14,13 +14,9 @@
 
 ## 🔥 P2: Core Features
 
-- [ ] **13.4** FCP/LCP Optimization: Land Page RSC Refactor 🎨 Gemini
+- [x] **13.4** FCP/LCP Optimization: Land Page RSC Refactor 🎨 Gemini
 - [ ] **13.1** Migrate useVault to TanStack Query ⚡ Claude
-- [x] **13.5** Landing Page Polish: Icons & "Locked Cloud" Visual 🎨 Gemini
-- [x] **12.3.3** Landing: Active Hero ("Paper Mario" CSS 3D Style) 🎨 Gemini
-- [x] **12.3.4** Landing: Reactive Hovers (Button/Section reactions) 🎨 Gemini
-- [x] **12.3.5** Landing: Storyteller ("Dynamic Island" Top Pill) 🎨 Gemini
-- [ ] **12.3.6** Kip Gamification: Streak Counter & Fire UI 🔥 Gemini
+- [x] **12.3.6** Kip Gamification: Streak Counter & Fire UI 🔥 Gemini
 
 ---
 
@@ -48,9 +44,15 @@
 ## 🔵 P5: Deferred to v2
 
 - [ ] **4.4** Mainnet deploy prep 🛡️ Opus
-- [ ] **12.2** Multi-recipient vaults
-- [ ] **11.1b** Full SSS recovery UI
-- [ ] **9.5** Write Assist
+- [ ] **12.2** Multi-recipient vaults ⚡ Claude
+- [ ] **11.1b** Full SSS recovery UI 🎨 Gemini
+- [ ] **9.5** Write Assist 🎨 Gemini
+- [ ] **6.4** Council of Guardians (DAO) 🛡️ Opus
+- [ ] **7.3** Email Magic Link (Auth) ⚡ Claude
+- [ ] **6.3** Dynamic NFT / Metaplex 🛡️ Opus
+- [ ] **6.1** Solana Blinks (Integration) ⚡ Claude
+- [ ] **14.1** Telegram "Guardian" Bot (Check-in via DM) ⚡ Claude
+- [ ] **14.2** Passive Wallet Watcher (Auto-check-in) 🛡️ Opus
 
 ---
 
@@ -67,6 +69,6 @@
 
 ## 📈 Progress
 
-**Completed (this session):** 13 tasks ✅ (PERF.1, PERF.2, 8.4, 12.1.3, SEC.2, 13.2-13.4, 9.7.1-9.7b, 12.3.1, 12.3.2)
+**Completed (this session):** 17 tasks ✅
 **Remaining:** 9 tasks
 **Est. Time:** 1-2 days
