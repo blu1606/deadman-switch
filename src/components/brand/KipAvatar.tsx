@@ -4,6 +4,9 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { getKipPalette, getKipState } from '@/utils/kip';
 
+import LifeForceRing from '@/components/kip/LifeForceRing';
+import KipParticles from '@/components/kip/KipParticles';
+
 interface KipAvatarProps {
     seed: string;
     health: number; // 0-100
@@ -11,6 +14,7 @@ interface KipAvatarProps {
     size?: 'sm' | 'md' | 'lg' | 'xl';
     isCharging?: boolean; // For hold button interaction
     showGlow?: boolean;
+    isCelebrating?: boolean;
     className?: string;
 }
 
@@ -28,6 +32,7 @@ export default function KipAvatar({
     size = 'md',
     isCharging = false,
     showGlow = true,
+    isCelebrating = false,
     className = '',
 }: KipAvatarProps) {
     const palette = useMemo(() => getKipPalette(seed), [seed]);
@@ -112,7 +117,9 @@ export default function KipAvatar({
             ? 'critical'
             : state === 'ghost'
                 ? 'ghost'
-                : 'idle';
+                : isCelebrating
+                    ? 'idle' // Or a jump?
+                    : 'idle';
 
     return (
         <div className={`relative flex items-center justify-center ${SIZE_MAP[size]} ${className}`}>
@@ -134,34 +141,11 @@ export default function KipAvatar({
 
             {/* Health Ring */}
             {!isReleased && (
-                <svg className="absolute inset-[-8px] w-[calc(100%+16px)] h-[calc(100%+16px)] -rotate-90 pointer-events-none overflow-visible">
-                    {/* Track */}
-                    <circle
-                        className="text-white/10"
-                        strokeWidth="3"
-                        stroke="currentColor"
-                        fill="transparent"
-                        r="48%"
-                        cx="50%"
-                        cy="50%"
-                    />
-                    {/* Indicator */}
-                    <motion.circle
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        fill="transparent"
-                        r="48%"
-                        cx="50%"
-                        cy="50%"
-                        style={{
-                            stroke: state === 'critical' ? '#EF4444' : state === 'hungry' ? '#EAB308' : '#10B981',
-                            filter: `drop-shadow(0 0 2px ${state === 'critical' ? '#EF4444' : state === 'hungry' ? '#EAB308' : '#10B981'})`
-                        }}
-                        initial={{ pathLength: 0 }}
-                        animate={{ pathLength: health / 100 }}
-                        transition={{ duration: 1.5, ease: "easeOut" }}
-                    />
-                </svg>
+                <LifeForceRing
+                    health={health}
+                    className="absolute inset-[-8px] w-[calc(100%+16px)] h-[calc(100%+16px)]"
+                    strokeWidth={3}
+                />
             )}
 
             {/* Main Body */}
@@ -187,8 +171,12 @@ export default function KipAvatar({
                         textShadow: '0 2px 4px rgba(0,0,0,0.2)'
                     }}
                 >
-                    {expressions[state]}
+
+                    {isCelebrating ? '^ ω ^' : expressions[state]}
                 </motion.div>
+
+                {/* Celebration Particles */}
+                <KipParticles trigger={isCelebrating} />
 
                 {/* Charging Particles (Suck In Effect) - Simplified */}
                 {isCharging && (

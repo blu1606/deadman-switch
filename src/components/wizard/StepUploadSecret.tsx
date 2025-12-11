@@ -19,6 +19,51 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext, onBack 
     const [confirmPassword, setConfirmPassword] = useState(formData.password || '');
     const [passwordHint, setPasswordHint] = useState(formData.passwordHint || '');
     const [error, setError] = useState<string | null>(null);
+    const [isGeneratingHint, setIsGeneratingHint] = useState(false);
+
+    const generateHint = async () => {
+        if (!password || password.length < 4) {
+            setError('Please enter a password first to generate a hint.');
+            return;
+        }
+
+        setIsGeneratingHint(true);
+        setError(null);
+
+        try {
+            // Context: "Password starts with '...'" (unsafe) or just "My password is related to..."
+            // Actually, we shouldn't send password. We should ask user for context.
+            // But for simple UX, maybe we assume the user types context in the hint box first?
+            // "Type context, then click generate"
+
+            if (!passwordHint || passwordHint.length < 10) {
+                setError('Please type some context about the password in the hint box first (e.g. "We went to this cafe in Paris").');
+                setIsGeneratingHint(false);
+                return;
+            }
+
+            const res = await fetch('/api/ai/generate-hint', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    context: passwordHint,
+                    recipient: 'Beneficiary'
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.hint) {
+                setPasswordHint(data.hint);
+            } else {
+                setError(data.error || 'Failed to generate hint');
+            }
+        } catch (err) {
+            setError('Failed to contact AI');
+        } finally {
+            setIsGeneratingHint(false);
+        }
+    };
 
     // Calculate content readiness based on bundle items
     const hasContent = (formData.bundleItems && formData.bundleItems.length > 0);
@@ -136,19 +181,31 @@ const StepUploadSecret: FC<Props> = ({ formData, updateFormData, onNext, onBack 
                         </div>
 
                         {/* Password Hint */}
-                        <div>
+                        <div className="relative">
                             <label className="block text-xs text-dark-400 mb-1">Password Hint (Optional)</label>
-                            <input
-                                type="text"
+                            <textarea
                                 value={passwordHint}
                                 onChange={(e) => setPasswordHint(e.target.value)}
-                                className="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary-500 font-normal"
-                                placeholder="E.g., Favorite childhood pet..."
+                                className="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary-500 font-normal min-h-[80px]"
+                                placeholder="Type context here (e.g. 'The name of our first pet'), then click 'Auto-Generate' to turn it into a riddle."
                             />
-                            <p className="text-[10px] text-dark-500 mt-1">
-                                This will be visible to the recipient <strong>before</strong> they decrypt. Do not put the password here.
-                            </p>
+                            <button
+                                type="button"
+                                onClick={generateHint}
+                                disabled={isGeneratingHint}
+                                className="absolute right-2 bottom-2 text-xs bg-primary-600/20 hover:bg-primary-600/30 text-primary-400 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                            >
+                                {isGeneratingHint ? (
+                                    <div className="w-3 h-3 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <span>✨</span>
+                                )}
+                                Auto-Optimize
+                            </button>
                         </div>
+                        <p className="text-[10px] text-dark-500 mt-1">
+                            This will be visible to the recipient <strong>before</strong> they decrypt. Do not put the password here.
+                        </p>
 
                         <p className="text-xs text-yellow-500/80">
                             ⚠️ You must share this password with your recipient via another channel.

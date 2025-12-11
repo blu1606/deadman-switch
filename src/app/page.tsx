@@ -144,12 +144,12 @@ export default function Home() {
 
 
 
+            {/* NEW SECTIONS for Phase 8.1 */}
+            <ProblemSection />
+
             <div id="mechanism">
                 <EmergencySwitch />
             </div>
-
-            {/* NEW SECTIONS for Phase 8.1 */}
-            <ProblemSection />
 
             <WhatIfSimulator />
 

@@ -118,6 +118,7 @@ const VaultCard: FC<VaultCardProps> = ({
                         size="md"
                         isCharging={isCharging}
                         showGlow={!vault.isReleased}
+                        isCelebrating={isSuccess}
                     />
 
                     {/* Streak Display under Kip */}

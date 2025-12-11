@@ -1,6 +1,6 @@
 'use client';
 
-import { FC } from 'react';
+import { FC, useState } from 'react';
 import { VaultFormData } from '@/types/vaultForm';
 
 interface Props {
@@ -40,6 +40,38 @@ const INTERVAL_OPTIONS = [
 const StepSetInterval: FC<Props> = ({ formData, updateFormData, onNext, onBack }) => {
     const handleSelectInterval = (value: number) => {
         updateFormData({ timeInterval: value });
+        setCustomInput(''); // Clear custom input if selecting preset
+    };
+
+    const [customInput, setCustomInput] = useState('');
+    const [isParsing, setIsParsing] = useState(false);
+    const [parseError, setParseError] = useState<string | null>(null);
+
+    const handleCustomParse = async () => {
+        if (!customInput.trim()) return;
+
+        setIsParsing(true);
+        setParseError(null);
+
+        try {
+            const res = await fetch('/api/ai/parse-timer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ input: customInput })
+            });
+
+            const data = await res.json();
+
+            if (data.seconds > 0) {
+                updateFormData({ timeInterval: data.seconds });
+            } else {
+                setParseError(data.error || 'Could not understand duration');
+            }
+        } catch (err) {
+            setParseError('Failed to parse duration');
+        } finally {
+            setIsParsing(false);
+        }
     };
 
     const formatInterval = (seconds: number): string => {
@@ -118,6 +150,41 @@ const StepSetInterval: FC<Props> = ({ formData, updateFormData, onNext, onBack }
                         </button>
                     ));
                 })()}
+                {/* AI Custom Input */}
+                <div className="pt-2">
+                    <label className="block text-xs text-dark-400 mb-2 uppercase tracking-warn font-semibold">Or type a custom duration (AI)</label>
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <input
+                                type="text"
+                                value={customInput}
+                                onChange={(e) => setCustomInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleCustomParse()}
+                                placeholder='e.g., "45 days", "3 months", "until next year"'
+                                className={`w-full bg-dark-800 border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary-500 transition-all ${parseError ? 'border-red-500/50 focus:border-red-500' : 'border-dark-600'
+                                    }`}
+                            />
+                            {isParsing && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                    <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            )}
+                        </div>
+                        <button
+                            onClick={handleCustomParse}
+                            disabled={isParsing || !customInput.trim()}
+                            className="px-6 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+                        >
+                            Set
+                        </button>
+                    </div>
+                    {parseError && (
+                        <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
+                            <span>⚠️</span> {parseError}
+                        </p>
+                    )}
+                </div>
+
             </div>
 
             {/* Explanation */}

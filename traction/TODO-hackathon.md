@@ -1,6 +1,6 @@
 # 📋 Hackathon To-Do: Optimized Execution Order
 
-> **Updated:** 2025-12-11T11:55
+> **Updated:** 2025-12-11T12:12
 > **Goal:** Ship demo-ready features in optimal order
 > **Model Guide:** 🎨 Gemini = UI/UX | ⚡ Claude = Logic | 🛡️ Opus = Critical
 
@@ -15,14 +15,20 @@
 ## 🔥 P2: Core Features
 
 - [ ] **13.1** Migrate useVault to TanStack Query ⚡ Claude
+- [ ] **13.5** Landing Page Polish: Icons & "Locked Cloud" Visual 🎨 Gemini
+- [x] **12.3.1** Kip Smart Life-Force Ring (Shared `LifeForceRing` Component) 🎨 Gemini
+- [x] **12.3.2** Kip Check-In Micro-interaction (Confetti/Happy State) 🎨 Gemini
+- [ ] **12.3.3** Landing: Active Hero ("Paper Mario" CSS 3D Style) 🎨 Gemini
+- [ ] **12.3.4** Landing: Reactive Hovers (Button/Section reactions) 🎨 Gemini
+- [ ] **12.3.4** Landing: Reactive Hovers (Button/Section reactions) 🎨 Gemini
+- [ ] **12.3.5** Landing: Storyteller ("Dynamic Island" Top Pill) 🎨 Gemini
+- [ ] **12.3.6** Kip Gamification: Streak Counter & Fire UI 🔥 Gemini
 
 ---
 
 ## 🟡 P3: Polish (If Time)
 
-- [x] **9.7.1** Supabase ai_cache table (via MCP) ⚡ Claude *(Created table, vector ext, RPC)*
-- [x] **9.7.2** Cache service integration ⚡ Claude *(ts services ready)*
-- [x] **9.7b** AI Semantic Caching (pgvector) 🧠 Thinking *(Integrated in API)*
+*(All P3 tasks completed! 🎉)*
 
 ---
 
@@ -31,6 +37,15 @@
 - [ ] **11.1** Guardian Key Sharding (SSS Implementation) 🛡️ Opus
 - [ ] **11.2.1** Gasless claim relayer design 🛡️ Opus
 - [ ] **11.2.2** Gasless claim UI integration 🎨 Gemini
+
+---
+
+---
+
+## 📹 Hackathon Deliverables (Final Lap)
+
+- [ ] **VIDEO.1** Script & Record Demo Video (Consumer Angle) 🎬 User
+- [ ] **SUBMIT** Submit to Solana Hackathon (Track 1) 🏆 User
 
 ---
 

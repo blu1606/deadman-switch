@@ -117,7 +117,7 @@
 | Brand Identity | ✅ Done | 100% |
 | Create Vault UX | ✅ Done | 100% |
 | Phase 4: Automation | ⏳ Near | 90% |
-| **Phase 9: AI** | ⏳ In Progress | **40%** |
+| **Phase 9: AI** | ⏳ In Progress | **90%** |
 | Phase 11: Premium | 📝 Spec | 0% |
 | **Phase 12: UX** | ✅ Done | **100%** |
 | Phase 13: Optimization | ⏳ In Progress | **75%** |
@@ -140,5 +140,8 @@
 - 6.3 Dynamic NFT / Metaplex
 - 6.1 Solana Blinks
 - 6.1 Solana Blinks
+- 6.1 Solana Blinks
 - 12.2 Multi-Recipient Vault
+- **14.1 Telegram "Guardian" Bot** (Check-in via DM)
+- **14.2 Passive Wallet Watcher** (Auto-check-in via TX activity)
 

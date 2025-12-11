@@ -53,7 +53,7 @@ export default function UseCaseGrid() {
                             <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl`} />
 
                             <div className="relative z-10 w-full flex flex-col items-center">
-                                <div className="relative w-32 h-32 mb-6 transition-transform duration-500 group-hover:scale-110 group-hover:drop-shadow-[0_0_25px_rgba(255,255,255,0.2)] mix-blend-screen">
+                                <div className="relative w-32 h-32 mb-6 transition-transform duration-500 group-hover:scale-110 group-hover:drop-shadow-[0_0_25px_rgba(255,255,255,0.2)]">
                                     <Image
                                         src={item.image}
                                         alt={item.title}
