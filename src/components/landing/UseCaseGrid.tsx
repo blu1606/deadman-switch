@@ -6,25 +6,25 @@ import Image from 'next/image';
 const useCases = [
     {
         title: "Lock",
-        subtitle: "Step 1: Setup",
+        subtitle: "Step 1: Secure",
         image: "/assets/glass-lock.png",
-        desc: "Deposit your assets into a smart contract vault. Add your encrypted notes. Only you hold the decryption key initially.",
+        desc: "Not just for tokens. Secure your Ledger seed phrases, 1Password master keys, and heartfelt final letters in an on-chain vault.",
         color: "from-blue-500/20 to-cyan-500/20",
         glow: "shadow-blue-500/20"
     },
     {
         title: "Live",
-        subtitle: "Step 2: Monitor",
+        subtitle: "Step 2: Automate",
         image: "/assets/glass-eye.png",
-        desc: "Kip monitors your on-chain activity. Simply perform a transaction or check-in to reset the timer. No subscription fees.",
+        desc: "We monitor for silence. Reply to our monthly email or check-in on-chain to confirm you're alive. Zero maintenance otherwise.",
         color: "from-amber-500/20 to-orange-500/20",
         glow: "shadow-amber-500/20"
     },
     {
         title: "Legacy",
-        subtitle: "Step 3: Release",
+        subtitle: "Step 3: Deliver",
         image: "/assets/glass-key.png",
-        desc: "If the timer hits zero, the switch triggers. Your private notes are decrypted and funds are sent to your beneficiary automatically.",
+        desc: "When the time comes, we automatically decrypt and deliver your assets to your beneficiaries. No lawyers needed.",
         color: "from-emerald-500/20 to-green-500/20",
         glow: "shadow-emerald-500/20"
     }
@@ -35,8 +35,8 @@ export default function UseCaseGrid() {
         <section className="py-24 px-4">
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-16">
-                    <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
-                    <p className="text-dark-400">Simple, secure, and 100% on-chain.</p>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-4">The 3-Step Process</h2>
+                    <p className="text-dark-400">Lock. Live. Legacy. Your digital safety net, simplified.</p>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8">

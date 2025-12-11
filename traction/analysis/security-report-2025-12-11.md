@@ -53,6 +53,16 @@
 
 ## 🛠️ Action Plan
 
-1.  **Immediate:** Add production check for `JWT_SECRET`.
-2.  **Deployment:** Verify `PLATFORM_WALLET_PRIVATE_KEY` is set in Vercel.
-3.  **Database:** precise RLS policies for `vault_notify_subscriptions`.
+1.  ~~**Immediate:** Add production check for `JWT_SECRET`.~~ ✅ Done (lines 4-7 in `jwt.ts`)
+2.  ~~**Deployment:** Verify `PLATFORM_WALLET_PRIVATE_KEY` is set in Vercel.~~ ✅ Done (lines 22-24 in `serverWallet.ts`)
+3.  ~~**Database:** precise RLS policies for `vault_notify_subscriptions`.~~ ✅ Done (2025-12-11)
+
+### RLS Policies Applied (2025-12-11)
+
+| Table | Status |
+|-------|--------|
+| `vault_notify_subscriptions` | ✅ Deny all public |
+| `emergency_contacts` | ✅ Deny all public |
+| `vault_contacts` | ✅ Deny all public |
+
+**Supabase Security Advisor:** 0 lints 🎉

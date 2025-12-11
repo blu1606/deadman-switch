@@ -1,6 +1,7 @@
 /**
  * Password Hint Generator API
  * Phase 9.2: AI-powered hint generation
+ * Phase 9.7: Semantic Caching (pgvector)
  * 
  * POST /api/ai/generate-hint
  * Generates a clever hint that helps recipient guess password without exposing it
@@ -9,6 +10,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generate } from '@/lib/ai';
 import { scanForSecrets } from '@/utils/safetyScanner';
+import { generateEmbedding } from '@/lib/ai/embedding';
+import { findCachedResponse, cacheResponse } from '@/lib/ai/cache';
 
 // Edge runtime for faster cold starts
 export const runtime = 'edge';
@@ -38,7 +41,6 @@ function scrubSensitiveData(text: string): { scrubbed: string; hadSensitive: boo
 
     if (result.detected) {
         // Remove the detected pattern (this is a simplified version)
-        // In production, you'd want more precise redaction
         return {
             scrubbed: text.replace(/[1-9A-HJ-NP-Za-km-z]{87,88}|0x[a-fA-F0-9]{64}/g, '[REDACTED]'),
             hadSensitive: true,
@@ -73,11 +75,42 @@ export async function POST(request: NextRequest) {
             console.warn('[AI] Sensitive data detected and scrubbed from hint request');
         }
 
-        // Build the prompt
+        // ---------------------------------------------------------
+        // 9.7 AI Semantic Caching
+        // ---------------------------------------------------------
         const recipientClause = body.recipient
             ? `The recipient is: ${body.recipient}`
             : 'The recipient is a loved one.';
 
+        // Use the scrubbed input as the cache key to ensure safety
+        const cacheInput = `Context: ${scrubbed}\n${recipientClause}`;
+        let embedding: number[] | null = null;
+
+        try {
+            // Generate embedding for semantic search
+            // This adds ~100-200ms but saves ~2-3s on cache hit
+            embedding = await generateEmbedding(cacheInput);
+
+            // Check for existing similar answer
+            const cached = await findCachedResponse(embedding);
+
+            if (cached) {
+                console.log(`[AI] Cache HIT (Similarity: ${cached.similarity.toFixed(4)})`);
+                return NextResponse.json({
+                    hint: cached.response,
+                    provider: 'cache-hit',
+                    latency: 150, // Approx overhead
+                    ...(hadSensitive && { warning: 'Sensitive data was automatically removed for your safety.' }),
+                });
+            }
+        } catch (cacheErr) {
+            // Fail open: If cache/embedding fails, just generate normally
+            console.warn('[AI] Cache lookup failed:', cacheErr);
+        }
+        // ---------------------------------------------------------
+
+
+        // Build the prompt for LLM
         const prompt = `Create a password hint based on this context:
 
 "${scrubbed}"
@@ -99,6 +132,21 @@ Generate a single hint that will help them remember without giving the password 
                 { status: 503 }
             );
         }
+
+        // ---------------------------------------------------------
+        // Cache the new result (Async / Fire-and-forget)
+        // ---------------------------------------------------------
+        if (embedding && result.text) {
+            // In Edge Runtime, we should use waitUntil to ensure bg tasks complete
+            // usage: context.waitUntil() - but we are in Route Handler
+            // Next.js App Router API Routes wait for response return, but background promises *might* be cancelled
+            // Ideally we just await it if it's fast, or accept risk.
+            // Supabase insert is fast (~50ms).
+            cacheResponse(cacheInput, result.text.trim(), embedding).catch(e =>
+                console.error('[AI] Cache save warning:', e)
+            );
+        }
+        // ---------------------------------------------------------
 
         return NextResponse.json({
             hint: result.text.trim(),

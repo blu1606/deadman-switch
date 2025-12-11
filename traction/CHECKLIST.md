@@ -94,11 +94,11 @@
     - [x] BugFix: Claim & Close validation + error messages
 
 ### Phase 13: System Optimization (NEW)
-- [x] 13.1 Data Fetching Architecture (TanStack Query)
+- [ ] 13.1 Data Fetching Architecture (TanStack Query)
 - [x] 13.2 Bundle & Render Optimization (Dynamic Imports)
 - [ ] Implementation
-    - [ ] 13.3 Performance Fixes (CSS/Animation)
-    - [ ] 13.4 Security Hardening (JWT/RLS)
+    - [x] 13.3 Performance Fixes (CSS/Animation)
+    - [x] 13.4 Security Hardening (JWT/RLS)
 
 
 ---
@@ -120,6 +120,7 @@
 | **Phase 9: AI** | ⏳ In Progress | **40%** |
 | Phase 11: Premium | 📝 Spec | 0% |
 | **Phase 12: UX** | ✅ Done | **100%** |
+| Phase 13: Optimization | ⏳ In Progress | **75%** |
 
 ---
 

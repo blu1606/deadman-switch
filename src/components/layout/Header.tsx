@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import WalletButton from '@/components/wallet/WalletButton';
+import dynamic from 'next/dynamic';
+const WalletButton = dynamic(() => import('@/components/wallet/WalletButton'), { ssr: false });
 import { useWallet } from '@solana/wallet-adapter-react';
 import { MenuBar, NavKey } from '@/components/ui/animated-menu-bar';
 

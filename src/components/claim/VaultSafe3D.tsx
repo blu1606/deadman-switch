@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 
 interface VaultSafe3DProps {
     isUnlocking?: boolean;
@@ -11,7 +11,6 @@ interface VaultSafe3DProps {
 
 export default function VaultSafe3D({ isUnlocking = false, label, onUnlockComplete }: VaultSafe3DProps) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [isHovered, setIsHovered] = useState(false);
 
     // Mouse position tracking for parallax
     const mouseX = useMotionValue(0);
@@ -33,7 +32,6 @@ export default function VaultSafe3D({ isUnlocking = false, label, onUnlockComple
     const handleMouseLeave = () => {
         mouseX.set(0);
         mouseY.set(0);
-        setIsHovered(false);
     };
 
     // Trigger callback after unlock animation completes
@@ -51,26 +49,29 @@ export default function VaultSafe3D({ isUnlocking = false, label, onUnlockComple
             ref={containerRef}
             className="relative w-52 h-52 mx-auto perspective-1000"
             onMouseMove={handleMouseMove}
-            onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={handleMouseLeave}
             style={{ perspective: '1000px' }}
         >
-            {/* Ambient glow effect */}
+            {/* Ambient glow effect - Optimized for performance (opacity vs box-shadow) */}
             <motion.div
-                className="absolute inset-0 rounded-3xl"
+                className="absolute inset-0 rounded-3xl bg-indigo-500/30 blur-xl"
                 animate={{
-                    boxShadow: isUnlocking
-                        ? ['0 0 60px rgba(16, 185, 129, 0.8)', '0 0 120px rgba(16, 185, 129, 1)', '0 0 200px rgba(16, 185, 129, 0.5)']
-                        : isHovered
-                            ? '0 0 80px rgba(99, 102, 241, 0.6)'
-                            : ['0 0 40px rgba(99, 102, 241, 0.3)', '0 0 60px rgba(99, 102, 241, 0.5)', '0 0 40px rgba(99, 102, 241, 0.3)'],
+                    opacity: isUnlocking ? [0.3, 0.8] : [0.2, 0.4, 0.2]
                 }}
                 transition={{
-                    duration: isUnlocking ? 2 : 2.5,
-                    repeat: isUnlocking ? 0 : Infinity,
-                    ease: 'easeInOut',
+                    duration: isUnlocking ? 0.5 : 3,
+                    repeat: Infinity,
+                    ease: "easeInOut"
                 }}
             />
+            {isUnlocking && (
+                <motion.div
+                    className="absolute inset-0 rounded-3xl bg-emerald-500/40 blur-2xl"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 1, 0.5] }}
+                    transition={{ duration: 1 }}
+                />
+            )}
 
             {/* Main safe body */}
             <motion.div

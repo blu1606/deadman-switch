@@ -110,8 +110,9 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
             setError('Please enter password');
             return;
         }
-        if (!publicKey) {
-            setError('Wallet not connected');
+        // Wallet required only for wallet-encrypted vaults
+        if (!publicKey && encryptionMode === 'wallet') {
+            setError('Wallet required for this vault');
             return;
         }
 
@@ -132,7 +133,7 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
 
             if (pkg.version === 3 && pkg.mode === 'wallet' && pkg.walletKey) {
                 const walletKeyData: WalletKeyData = pkg.walletKey;
-                vaultKey = await unwrapKeyWithWallet(walletKeyData, publicKey.toBase58());
+                vaultKey = await unwrapKeyWithWallet(walletKeyData, publicKey!.toBase58());
             } else if (pkg.version === 2 && pkg.keyWrapper) {
                 const wrapper: WrappedKeyData = pkg.keyWrapper;
                 vaultKey = await unwrapKeyWithPassword(wrapper, password);
@@ -719,8 +720,9 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                                         {vault.lockedLamports && new BN(vault.lockedLamports).gt(new BN(0)) && (
                                             <button
                                                 onClick={handleClaimSol}
-                                                disabled={isClaimingSol || solClaimed || vaultClosed}
-                                                className={`btn-secondary text-sm ${solClaimed ? 'bg-green-500/10 text-green-400 border-green-500/50' : ''}`}
+                                                disabled={isClaimingSol || solClaimed || vaultClosed || !publicKey}
+                                                className={`btn-secondary text-sm ${solClaimed ? 'bg-green-500/10 text-green-400 border-green-500/50' : ''} ${!publicKey ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                title={!publicKey ? 'Connect wallet to claim SOL' : undefined}
                                             >
                                                 {isClaimingSol ? 'Claiming SOL...' : solClaimed ? 'SOL Claimed ✅' : `Claim ${(new BN(vault.lockedLamports).toNumber() / 1e9).toFixed(2)} SOL`}
                                             </button>
@@ -730,8 +732,9 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                                         {vault.lockedTokens && new BN(vault.lockedTokens).gt(new BN(0)) && (
                                             <button
                                                 onClick={handleClaimTokens}
-                                                disabled={isClaimingTokens || tokensClaimed || vaultClosed}
-                                                className={`btn-secondary text-sm ${tokensClaimed ? 'bg-green-500/10 text-green-400 border-green-500/50' : ''}`}
+                                                disabled={isClaimingTokens || tokensClaimed || vaultClosed || !publicKey}
+                                                className={`btn-secondary text-sm ${tokensClaimed ? 'bg-green-500/10 text-green-400 border-green-500/50' : ''} ${!publicKey ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                title={!publicKey ? 'Connect wallet to claim tokens' : undefined}
                                             >
                                                 {isClaimingTokens ? 'Claiming...' : tokensClaimed ? 'Tokens Claimed ✅' : `Claim Tokens`}
                                             </button>
@@ -743,8 +746,8 @@ export default function ClaimModal({ vault, onClose, onSuccess }: ClaimModalProp
                                             onClick={handleClaimAndClose}
                                             disabled={isClosing || !canClose}
                                             className={`w-full btn-secondary disabled:opacity-50 text-sm ${canClose
-                                                    ? 'text-yellow-400 border-yellow-500/50 hover:bg-yellow-500/10'
-                                                    : 'text-dark-500 border-dark-600 cursor-not-allowed'
+                                                ? 'text-yellow-400 border-yellow-500/50 hover:bg-yellow-500/10'
+                                                : 'text-dark-500 border-dark-600 cursor-not-allowed'
                                                 }`}
                                             title={!canClose ? (!isExpiredOrReleased ? 'Vault must be expired or released to close' : 'Only the recipient can close this vault') : undefined}
                                         >

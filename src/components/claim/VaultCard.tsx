@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import VaultSafe3D from './VaultSafe3D';
+import dynamic from 'next/dynamic';
+const VaultSafe3D = dynamic(() => import('./VaultSafe3D'), { ssr: false });
 import { VaultData } from '@/utils/solanaParsers';
 import { truncateAddress } from '@/lib/utils';
 

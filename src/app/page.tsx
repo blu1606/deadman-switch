@@ -2,19 +2,17 @@
 'use client';
 
 import Link from 'next/link';
-import WalletButton from '@/components/wallet/WalletButton';
-import { useWallet } from '@solana/wallet-adapter-react';
 import { motion } from 'framer-motion';
-import { Activity, Lock, ScrollText, Sparkles } from 'lucide-react';
+import { Lock, Sparkles, Shield, AlertTriangle } from 'lucide-react';
 import ProblemSection from '@/components/landing/ProblemSection';
 import UseCaseGrid from '@/components/landing/UseCaseGrid';
 import FAQSection from '@/components/landing/FAQSection';
 import WhatIfSimulator from '@/components/landing/WhatIfSimulator';
 import TrustBadges from '@/components/landing/TrustBadges';
 import PricingSection from '@/components/landing/PricingSection';
+import EmergencySwitch from '@/components/landing/EmergencySwitch';
 
 export default function Home() {
-    const { connected } = useWallet();
 
     return (
         <main className="min-h-screen relative overflow-hidden">
@@ -24,153 +22,131 @@ export default function Home() {
                 <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-secondary-500/5 rounded-full blur-[120px] animate-pulse-slow" style={{ animationDelay: '2s' }} />
             </div>
 
-            <section className="pt-24 pb-20 px-4 max-w-7xl mx-auto">
-                <div className="grid lg:grid-cols-12 gap-8 items-start">
 
-                    {/* LEFT COLUMN: Narrative & Actions (5 cols) */}
-                    <div className="lg:col-span-5 flex flex-col justify-center h-full pt-8">
+            {/* Split Screen Hero */}
+            <section className="relative min-h-[90vh] flex flex-col justify-center">
+                {/* Visual Split Background */}
+                <div className="absolute inset-0 grid lg:grid-cols-2">
+                    {/* Left: The Unknown (Darker) */}
+                    <div className="bg-gradient-to-br from-dark-950 to-dark-900 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-[url('/assets/grid.svg')] opacity-10" />
+                    </div>
+                    {/* Right: The Solution (Lighter/Safe) */}
+                    <div className="bg-gradient-to-bl from-dark-900 to-primary-950/30 relative overflow-hidden hidden lg:block">
+                        <div className="absolute inset-0 bg-primary-500/5 blur-3xl rounded-full transform translate-x-1/2 translate-y-1/2" />
+                    </div>
+                </div>
+
+                <div className="container mx-auto px-4 relative z-10 pt-20">
+                    <div className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-center">
+
+                        {/* Left Column: The Problem/Hook */}
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.8 }}
+                            className="max-w-xl"
                         >
-                            <h1 className="text-5xl sm:text-7xl font-bold mb-8 leading-tight tracking-tight">
-                                <span className="block text-white">Digital</span>
-                                <span className="block bg-gradient-to-r from-primary-200 via-primary-400 to-secondary-200 bg-clip-text text-transparent">
-                                    Immortality.
-                                </span>
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono mb-6 uppercase tracking-wider">
+                                <AlertTriangle className="w-3 h-3" />
+                                Reality Check
+                            </div>
+
+                            <h1 className="text-5xl sm:text-7xl font-bold mb-8 leading-tight tracking-tight text-white">
+                                If you went offline today, <span className="text-dark-400">would your family know where to look?</span>
                             </h1>
 
-                            <p className="text-xl text-dark-300 mb-10 leading-relaxed max-w-lg">
-                                Your digital soul, preserved on-chain. The final act of love for those you leave behind.
-                                Secure, decentralized, and eternal.
+                            <p className="text-xl text-dark-300 mb-10 leading-relaxed">
+                                The automated safety deposit box for your digital life.
+                                <span className="text-white font-medium"> Crypto, passwords, and final messages</span>
+                                —delivered only when you can&apos;t.
                             </p>
 
                             <div className="flex flex-col sm:flex-row gap-4 mb-12">
-                                {connected ? (
-                                    <>
-                                        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                                            <Link href="/create" className="btn-primary text-lg px-8 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-primary-900/20 hover:shadow-primary-500/20 transition-all">
-                                                <span>Create Vault</span>
-                                                <Sparkles className="w-5 h-5" />
-                                            </Link>
-                                            <Link href="/dashboard" className="px-8 py-4 rounded-2xl bg-dark-800/40 border border-white/5 hover:bg-dark-800/60 transition-all text-white font-medium text-lg flex items-center justify-center">
-                                                My Sanctuaries
-                                            </Link>
-                                        </div>
-                                        <div className="flex justify-center sm:justify-start">
-                                            <Link
-                                                href="/demo"
-                                                className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-primary-500/30 transition-all text-white font-medium flex items-center justify-center gap-2 text-sm opacity-80 hover:opacity-100"
-                                            >
-                                                <span>▶️ Try Demo</span>
-                                            </Link>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="flex flex-col gap-4">
-                                        <div className="flex flex-col sm:flex-row gap-4">
-                                            <WalletButton />
-                                            <Link
-                                                href="/demo"
-                                                className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-primary-500/30 transition-all text-white font-medium flex items-center justify-center gap-2"
-                                            >
-                                                <span>▶️ Try Demo</span>
-                                                <span className="text-xs text-dark-400 font-normal">(No Wallet Needed)</span>
-                                            </Link>
-                                        </div>
-                                        <p className="text-dark-500 text-sm ml-2 italic">
-                                            Connect to begin your legacy
-                                        </p>
-                                    </div>
-                                )}
+                                <Link href="/create" className="btn-primary text-lg px-8 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-primary-900/20 hover:shadow-primary-500/20 transition-all group">
+                                    <span>Secure My Legacy</span>
+                                    <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                </Link>
+                                <button
+                                    onClick={() => document.getElementById('mechanism')?.scrollIntoView({ behavior: 'smooth' })}
+                                    className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white font-medium text-lg flex items-center justify-center cursor-pointer"
+                                >
+                                    How it Works
+                                </button>
                             </div>
 
                             <TrustBadges />
-
                         </motion.div>
-                    </div>
 
-                    {/* RIGHT COLUMN: Bento Grid Visuals (7 cols) */}
-                    <div className="lg:col-span-7 grid grid-cols-2 gap-4 h-full min-h-[500px]">
-
-                        {/* Cell 1: The Pulse (Large, Top Left) */}
-                        <motion.div
-                            className="glass-panel p-8 rounded-3xl col-span-2 sm:col-span-1 relative overflow-hidden group"
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.2, duration: 0.6 }}
-                        >
-                            <div className="absolute top-4 right-4 text-xs font-mono text-primary-400/80 border border-primary-500/20 px-2 py-1 rounded-full flex items-center gap-2">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
-                                </span>
-                                SYSTEM_ACTIVE
-                            </div>
-                            <div className="h-full flex flex-col justify-end relative z-10">
-                                <div className="w-16 h-16 rounded-full bg-primary-500/20 flex items-center justify-center mb-6 backdrop-blur-md group-hover:scale-110 transition-transform duration-500 border border-primary-500/20">
-                                    <Activity className="w-8 h-8 text-primary-400 animate-pulse-slow" />
+                        {/* Right Column: The Solution Visual */}
+                        <div className="hidden lg:block relative h-[600px]">
+                            {/* "Before" Card (Stacked behind) */}
+                            <motion.div
+                                className="absolute top-10 right-10 w-full max-w-md bg-dark-800/50 rounded-3xl border border-dark-700 p-8 blur-sm scale-95 opacity-50"
+                                animate={{ y: [0, -10, 0] }}
+                                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                            >
+                                <div className="space-y-4">
+                                    <div className="h-4 w-1/3 bg-dark-700/50 rounded" />
+                                    <div className="h-4 w-3/4 bg-dark-700/50 rounded" />
                                 </div>
-                                <h3 className="text-2xl font-bold text-white mb-2">The Heartbeat</h3>
-                                <p className="text-dark-300 text-sm leading-relaxed">
-                                    A simple &quot;I&apos;m here&quot; resets the timer. If the silence grows too long, the protocol awakens.
-                                </p>
-                            </div>
-                            {/* Abstract pulse visual */}
-                            <div className="absolute right-[-20%] top-[-20%] w-[80%] h-[80%] border-[20px] border-primary-500/5 rounded-full" />
-                            <div className="absolute right-[-10%] top-[-10%] w-[60%] h-[60%] border-[20px] border-primary-500/10 rounded-full" />
-                        </motion.div>
+                            </motion.div>
 
-                        {/* Cell 2: Encryption (Tall, Top Right) */}
-                        <motion.div
-                            className="glass-panel p-8 rounded-3xl col-span-2 sm:row-span-2 sm:col-span-1 flex flex-col justify-between relative overflow-hidden group"
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.4, duration: 0.6 }}
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-dark-900/50" />
-
-                            <div className="relative z-10">
-                                <div className="mb-8 p-4 bg-dark-900/50 rounded-2xl border border-white/5 font-mono text-xs text-primary-300/70 overflow-hidden leading-relaxed opacity-60">
-                                    0x7F...3A2B<br />
-                                    ENCRYPTED_PAYLOAD<br />
-                                    kty: &quot;RSA&quot;,<br />
-                                    alg: &quot;OAEP-256&quot;,<br />
-                                    ext: true,<br />
+                            {/* "After" Card (Main Focus) */}
+                            <motion.div
+                                className="absolute top-20 right-20 w-full max-w-md bg-dark-800/90 backdrop-blur-xl rounded-3xl border border-primary-500/30 p-8 shadow-2xl shadow-primary-900/20"
+                                initial={{ opacity: 0, y: 50 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.4 }}
+                            >
+                                {/* Header */}
+                                <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                            <Sparkles className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-white font-bold">Dad&apos;s Vault</h3>
+                                            <p className="text-xs text-emerald-400 font-mono">ACCESS GRANTED</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-xs text-dark-400 font-mono">10:42 AM</div>
                                 </div>
-                                <h3 className="text-2xl font-bold text-white mb-2">Zero Knowledge</h3>
-                                <p className="text-dark-300 text-sm leading-relaxed">
-                                    Your secrets are encrypted client-side. We never see them. Only your chosen recipient holds the key to unlock the silence.
-                                </p>
-                            </div>
 
-                            <div className="absolute bottom-[-10%] right-[-10%] opacity-[0.03] rotate-[-15deg] pointer-events-none select-none">
-                                <Lock className="w-48 h-48" />
-                            </div>
-                        </motion.div>
+                                {/* Content */}
+                                <div className="space-y-6">
+                                    <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                        <p className="text-sm text-dark-300 font-mono mb-2">PRIVATE KEY</p>
+                                        <p className="text-white font-mono break-all opacity-0 animate-pulse">
+                                            ********************************
+                                        </p>
+                                        <div className="mt-2 text-emerald-400 text-xs flex items-center gap-2">
+                                            <Lock className="w-3 h-3" />
+                                            Decrypted successfully
+                                        </div>
+                                    </div>
 
-                        {/* Cell 3: Legacy (Wide, Bottom Left) */}
-                        <motion.div
-                            className="glass-panel p-8 rounded-3xl col-span-2 sm:col-span-1 relative overflow-hidden group bg-gradient-to-r from-dark-800/40 to-primary-900/10"
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.6, duration: 0.6 }}
-                        >
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center border border-white/10 group-hover:border-primary-400/30 transition-colors">
-                                    <ScrollText className="w-6 h-6 text-primary-200" />
+                                    <div className="p-4 rounded-xl bg-gradient-to-r from-primary-900/20 to-transparent border border-primary-500/10">
+                                        <p className="text-sm text-white italic">
+                                            &quot;If you&apos;re reading this, I love you. Here is the access to the family portfolio...&quot;
+                                        </p>
+                                    </div>
+
+                                    <Link href="/demo" className="block w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-center rounded-xl font-medium transition-colors">
+                                        View Contents
+                                    </Link>
                                 </div>
-                                <h3 className="text-xl font-bold text-white">The Reveal</h3>
-                            </div>
-                            <p className="text-dark-300 text-sm">
-                                When the timer hits zero, the vault opens. A final message, a crypto transfer, or a cherished memory.
-                            </p>
-                        </motion.div>
-
+                            </motion.div>
+                        </div>
                     </div>
                 </div>
             </section>
+
+
+
+            <div id="mechanism">
+                <EmergencySwitch />
+            </div>
 
             {/* NEW SECTIONS for Phase 8.1 */}
             <ProblemSection />

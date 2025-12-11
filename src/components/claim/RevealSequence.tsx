@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TypeAnimation } from 'react-type-animation';
-import VaultSafe from './VaultSafe3D';
+import dynamic from 'next/dynamic';
+const VaultSafe = dynamic(() => import('./VaultSafe3D'), { ssr: false });
 
 interface RevealSequenceProps {
     isDecrypting: boolean;
@@ -69,6 +70,7 @@ export default function RevealSequence({
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
+                        style={{ willChange: "transform, opacity" }}
                         className="text-center"
                     >
                         <VaultSafe isUnlocking={false} />

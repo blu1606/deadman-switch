@@ -34,7 +34,10 @@ export default function ProblemSection() {
                                 $140B+
                             </div>
                             <p className="text-sm text-dark-400 uppercase tracking-widest">
-                                Crypto Assets Lost Forever
+                                Assets Lost to Inactivity
+                            </p>
+                            <p className="text-xs text-primary-400/50 mt-4 max-w-xs mx-auto">
+                                *Like Google&apos;s Inactive Account Manager, but for everything else you own.
                             </p>
                         </div>
                     </div>
@@ -47,25 +50,29 @@ export default function ProblemSection() {
                             viewport={{ once: true }}
                             className="text-4xl md:text-5xl font-bold mb-6 leading-tight"
                         >
-                            Satoshi&apos;s coins are lost forever. <span className="text-red-400">Yours don&apos;t have to be.</span>
+                            The Google Inactive Account Manager <span className="text-red-400">for your entire digital life.</span>
                         </motion.h2>
 
                         <p className="text-xl text-dark-300 mb-8 leading-relaxed">
-                            20% of all Bitcoin is trapped in lost wallets. Keys forgotten, drives corrupted, or owners passing away without a plan.
+                            Web2 has safety nets. Web3 didn&apos;t—until now.
+                            <br />
+                            <span className="text-white/80 text-base mt-2 block">
+                                When you stop checking in, we ensure your crypto, passwords, and final messages reach the people who matter most.
+                            </span>
                         </p>
 
                         <div className="space-y-4">
                             <div className="flex items-start gap-4">
                                 <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center mt-1 text-red-400">✕</div>
-                                <p className="text-dark-400">Your wife doesn&apos;t have your private keys. She gets $0.</p>
+                                <p className="text-dark-400">Your family doesn&apos;t have your private keys.</p>
                             </div>
                             <div className="flex items-start gap-4">
                                 <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center mt-1 text-red-400">✕</div>
-                                <p className="text-dark-400">Family members locked out of inheritance.</p>
+                                <p className="text-dark-400">Lawyers can&apos;t access your encrypted cloud vaults.</p>
                             </div>
                             <div className="flex items-start gap-4">
                                 <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center mt-1 text-red-400">✕</div>
-                                <p className="text-dark-400">Secrets die with their secrets holders.</p>
+                                <p className="text-dark-400">Important final words left unsaid.</p>
                             </div>
                         </div>
                     </div>

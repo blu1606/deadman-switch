@@ -1,6 +1,11 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+// SECURITY: JWT_SECRET is REQUIRED in production. Fail-fast if missing.
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction && !process.env.JWT_SECRET) {
+    throw new Error('FATAL: JWT_SECRET environment variable is required in production!');
+}
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-DO-NOT-USE-IN-PRODUCTION';
 const JWT_EXPIRY = '7d'; // Magic links valid for 7 days
 
 export interface MagicLinkPayload {
