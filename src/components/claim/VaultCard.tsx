@@ -59,11 +59,19 @@ export default function VaultCard({ vault, onClaim }: VaultCardProps) {
                         {truncateAddress(vault.owner.toBase58())}
                     </span>
                 </div>
-                {canClaim && (
-                    <span className="text-[10px] font-bold tracking-wider text-green-400 bg-green-500/10 px-2 py-1 rounded border border-green-500/20 animate-pulse">
-                        UNLOCKED
-                    </span>
-                )}
+                <div className="flex flex-col items-end gap-1">
+                    {canClaim && (
+                        <span className="text-[10px] font-bold tracking-wider text-green-400 bg-green-500/10 px-2 py-1 rounded border border-green-500/20 animate-pulse">
+                            UNLOCKED
+                        </span>
+                    )}
+                    {/* 11.2: Premium Gas Pre-paid Badge */}
+                    {vault.lockedLamports && vault.lockedLamports.toNumber() > 0 && (
+                        <span className="text-[10px] font-bold tracking-wider text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20 flex items-center gap-1">
+                            ⚡ GAS PRE-PAID
+                        </span>
+                    )}
+                </div>
             </div>
 
             {/* Center: The Safe Visual */}

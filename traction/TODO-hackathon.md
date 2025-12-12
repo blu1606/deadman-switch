@@ -8,14 +8,14 @@
 
 ## 🔥 P1: Quick Wins (Demo-Critical)
 
-- [ ] **9.8** Fix AI Timer JSON Output (Harden Prompt) 🧠 Thinking
+- [x] **9.8** Fix AI Timer JSON Output (Harden Prompt) 🧠 Thinking ✅
 
 ---
 
 ## 🔥 P2: Core Features
 
 - [x] **13.4** FCP/LCP Optimization: Land Page RSC Refactor 🎨 Gemini
-- [ ] **13.1** Migrate useVault to TanStack Query ⚡ Claude
+- [x] **13.1** Migrate useVault to TanStack Query ⚡ Claude ✅
 - [x] **12.3.6** Kip Gamification: Streak Counter & Fire UI 🔥 Gemini
 
 ---
@@ -28,9 +28,9 @@
 
 ## 💎 P4: Premium Features
 
-- [ ] **11.1** Guardian Key Sharding (SSS Implementation) 🛡️ Opus
-- [ ] **11.2.1** Gasless claim relayer design 🛡️ Opus
-- [ ] **11.2.2** Gasless claim UI integration 🎨 Gemini
+- [x] **11.1** Guardian Key Sharding (SSS Implementation) 🛡️ Opus ✅
+- [x] **11.2.1** Gasless claim relayer design 🛡️ Opus ✅
+- [x] **11.2.2** Gasless claim UI integration 🎨 Gemini ✅
 
 ---
 

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Key, Shield, Check, Loader2, AlertTriangle } from 'lucide-react';
-import secrets from 'secrets.js-grempe';
 
 interface KeyRecoveryDemoProps {
     onRecovered?: (key: string) => void;
@@ -29,9 +28,16 @@ export default function KeyRecoveryDemo({ onRecovered }: KeyRecoveryDemoProps) {
             // Simulate processing
             await new Promise(r => setTimeout(r, 1500));
 
+            // Dynamic import to avoid SSR issues
+            const secrets = (await import('secrets.js-grempe')).default;
+
             // Combine shards using Shamir's Secret Sharing
             const combinedHex = secrets.combine([shard1, shard2]);
-            const recoveredKeyStr = Buffer.from(combinedHex, 'hex').toString();
+
+            // Convert hex back to string (browser-compatible, no Buffer needed)
+            const bytes = new Uint8Array(combinedHex.match(/.{1,2}/g)?.map((byte: string) => parseInt(byte, 16)) || []);
+            const textDecoder = new TextDecoder();
+            const recoveredKeyStr = textDecoder.decode(bytes);
 
             setRecoveredKey(recoveredKeyStr);
             onRecovered?.(recoveredKeyStr);

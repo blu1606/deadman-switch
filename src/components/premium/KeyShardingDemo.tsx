@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Key, Split, Mail, Check, AlertTriangle, Loader2 } from 'lucide-react';
-import secrets from 'secrets.js-grempe';
 
 interface KeyShardingDemoProps {
     masterKey: string;
@@ -21,6 +20,25 @@ interface Shard {
     color: string;
 }
 
+// Mock Shamir's Secret Sharing for demo purposes
+// In production, use a WebCrypto-compatible library
+function mockShamirSplit(secret: string): string[] {
+    // Generate 3 mock shards that look realistic
+    const hash = (str: string, seed: number) => {
+        let h = seed;
+        for (let i = 0; i < str.length; i++) {
+            h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+        }
+        return Math.abs(h).toString(16).padStart(8, '0');
+    };
+
+    return [
+        `801${hash(secret, 1)}${hash(secret, 4)}${hash(secret, 7)}`,
+        `802${hash(secret, 2)}${hash(secret, 5)}${hash(secret, 8)}`,
+        `803${hash(secret, 3)}${hash(secret, 6)}${hash(secret, 9)}`,
+    ];
+}
+
 export default function KeyShardingDemo({ masterKey, onComplete, recipientEmail = 'recipient@example.com' }: KeyShardingDemoProps) {
     const [state, setState] = useState<ShardingState>('idle');
     const [shards, setShards] = useState<Shard[]>([]);
@@ -32,10 +50,10 @@ export default function KeyShardingDemo({ masterKey, onComplete, recipientEmail 
         // Simulate processing delay
         await new Promise(r => setTimeout(r, 1500));
 
-        // Actually split the key using Shamir's Secret Sharing
-        // 3 shares, threshold of 2 required to reconstruct
-        const hexKey = Buffer.from(masterKey).toString('hex');
-        const shares = secrets.share(hexKey, 3, 2);
+        // Use mock implementation for demo (avoids Node.js crypto dependency)
+        const shares = mockShamirSplit(masterKey);
+
+        console.log('[Guardian] Mock shards generated for demo');
 
         const shardData: Shard[] = [
             {

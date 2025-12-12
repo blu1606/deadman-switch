@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Program, AnchorProvider, BN, Idl } from '@coral-xyz/anchor';
 import { PROGRAM_ID } from '@/utils/anchor';
 import { parseVaultAccount, VaultData } from '@/utils/solanaParsers';
 import { DeadmansSwitch } from '@/types/deadmans-switch';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export type { VaultData }; // Re-export for consumers
 
@@ -29,10 +30,7 @@ export interface UseOwnerVaultsResult {
 export function useOwnerVaults(): UseOwnerVaultsResult {
     const { publicKey, signTransaction, signAllTransactions } = useWallet();
     const { connection } = useConnection();
-
-    const [vaults, setVaults] = useState<VaultData[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
 
     const getStatus = useCallback((vault: VaultData): VaultStatus => {
         const now = Math.floor(Date.now() / 1000);
@@ -60,19 +58,12 @@ export function useOwnerVaults(): UseOwnerVaultsResult {
         };
     }, []);
 
-    const fetchVaults = useCallback(async (silent = false) => {
-        if (!publicKey) {
-            setVaults([]);
-            setLoading(false);
-            return;
-        }
+    // TanStack Query for fetching vaults
+    const { data: vaults = [], isLoading, error, refetch: queryRefetch } = useQuery({
+        queryKey: ['ownerVaults', publicKey?.toBase58()],
+        queryFn: async () => {
+            if (!publicKey) return [];
 
-        if (!silent) {
-            setLoading(true);
-        }
-        setError(null);
-
-        try {
             const accounts = await connection.getProgramAccounts(PROGRAM_ID, {
                 filters: [
                     {
@@ -84,63 +75,72 @@ export function useOwnerVaults(): UseOwnerVaultsResult {
                 ],
             });
 
-            const parsed = accounts.map((acc) => parseVaultAccount(acc.pubkey, acc.account.data));
+            return accounts.map((acc) => parseVaultAccount(acc.pubkey, acc.account.data));
+        },
+        enabled: !!publicKey,
+        staleTime: 30 * 1000, // 30 seconds
+    });
 
-            setVaults(parsed);
-        } catch (err) {
-            console.error('Failed to fetch owner vaults:', err);
-            setError('Failed to load vaults');
-        } finally {
-            setLoading(false);
-        }
-    }, [publicKey, connection]);
+    // Mutation for ping operation
+    const pingMutation = useMutation({
+        mutationFn: async (vault: VaultData) => {
+            if (!publicKey || !signTransaction || !signAllTransactions) {
+                throw new Error('Wallet not connected');
+            }
 
+            const provider = new AnchorProvider(
+                connection,
+                { publicKey, signTransaction, signAllTransactions },
+                { commitment: 'confirmed' }
+            );
+
+            const idl = await import('@/idl/deadmans_switch.json');
+
+            const program = new Program<DeadmansSwitch>(idl as unknown as Idl, provider);
+
+            const tx = await program.methods
+                .ping()
+                .accounts({
+                    vault: vault.publicKey,
+                    signer: publicKey,
+                })
+                .rpc();
+
+            return { tx, vault };
+        },
+        onSuccess: ({ vault }) => {
+            // Optimistic update
+            const now = Math.floor(Date.now() / 1000);
+            queryClient.setQueryData<VaultData[]>(
+                ['ownerVaults', publicKey?.toBase58()],
+                (old) => old?.map(v =>
+                    v.publicKey.equals(vault.publicKey)
+                        ? { ...v, lastCheckIn: new BN(now) }
+                        : v
+                ) || []
+            );
+
+            // Background refetch
+            queryClient.invalidateQueries({ queryKey: ['ownerVaults'] });
+        },
+    });
+
+    // Wrapper for refetch
+    const refetch = useCallback(async () => {
+        await queryRefetch();
+    }, [queryRefetch]);
+
+    // Wrapper for ping
     const ping = useCallback(async (vault: VaultData): Promise<string> => {
-        if (!publicKey || !signTransaction || !signAllTransactions) {
-            throw new Error('Wallet not connected');
-        }
-
-        const provider = new AnchorProvider(
-            connection,
-            { publicKey, signTransaction, signAllTransactions },
-            { commitment: 'confirmed' }
-        );
-
-        const idl = await import('@/idl/deadmans_switch.json');
-
-        const program = new Program<DeadmansSwitch>(idl as unknown as Idl, provider);
-
-        const tx = await program.methods
-            .ping()
-            .accounts({
-                vault: vault.publicKey,
-                signer: publicKey,
-            })
-            .rpc();
-
-        // Optimistic update
-        const now = Math.floor(Date.now() / 1000);
-        setVaults(prev => prev.map(v =>
-            v.publicKey.equals(vault.publicKey)
-                ? { ...v, lastCheckIn: new BN(now) }
-                : v
-        ));
-
-        // Background fetch to ensure consistency, but don't block
-        fetchVaults(true).catch(console.error);
-
-        return tx;
-    }, [publicKey, signTransaction, signAllTransactions, connection, fetchVaults]);
-
-    useEffect(() => {
-        fetchVaults();
-    }, [fetchVaults]);
+        const result = await pingMutation.mutateAsync(vault);
+        return result.tx;
+    }, [pingMutation]);
 
     return {
         vaults,
-        loading,
-        error,
-        refetch: fetchVaults,
+        loading: isLoading,
+        error: error instanceof Error ? error.message : error ? 'Failed to load vaults' : null,
+        refetch,
         ping,
         getStatus,
     };
@@ -161,3 +161,4 @@ export function useVault() {
         ping: vault ? () => result.ping(vault) : async () => { throw new Error('No vault'); },
     };
 }
+
