@@ -92,6 +92,7 @@
 - [ ] Implementation Polish
     - [x] 12.1 Recipient Journey (Password-first Claim + Hint)
     - [x] 12.3 Landing: Paper Mario Hero, Reactive Hovers, Storyteller
+    - [ ] 12.4 Landing Mechanism Polish (Pulse Upgrade)
 
 ### Phase 13: System Optimization (In Progress)
 - [x] 13.1 Data Fetching Architecture (TanStack Query)
@@ -105,6 +106,7 @@
 ### Refactor & Tech Debt (In Progress)
 - [x] R.1 Refactor `VaultContentEditor` (God Component)
 - [x] R.2 Wizard Robustness
+- [ ] R.3 Refactor `crypto.ts` (Split Primitives/Logic)
 - [x] R.2 Wizard Robustness
 - [x] T.1 Cron & Scalability (GitHub Actions + Safe Parser)
 - [x] T.2 Cron Service Layerization (Scanner/Classifier/Notification)
@@ -117,8 +119,8 @@
   - [x] 14.1c P1 Core Functionality (3 tests)
   - [x] 14.1d P2 Edge Cases (2 tests)
   - [ ] 14.1e Complete P0 (2 remaining)
-  - [ ] 14.1f Complete P1 (2 remaining)
-  - [ ] 14.1g Complete P2 (7 remaining)
+  - [x] 14.1f Complete P1 (2 remaining)
+  - [x] 14.1g Complete P2 (7 remaining)
   - [ ] 14.1h SPL Token Tests (9 tests, T.2 dependency)
 - [x] 14.2 Unit Testing (Vitest)
 - [/] 14.3 Integration Testing (Vault Service spec added)

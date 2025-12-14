@@ -1,6 +1,6 @@
 # 📋 Hackathon To-Do: Optimized Execution Order
 
-> **Updated:** 2025-12-12T21:55
+> **Updated:** 2025-12-13T23:45
 > **Goal:** Ship demo-ready features in optimal order
 > **Model Guide:** 🎨 Gemini = UI/UX | ⚡ Claude = Logic | 🛡️ Opus = Critical
 
@@ -20,18 +20,13 @@
 
 ## 🟡 P3: Polish (If Time)
 
-- [x] **13.5** DAS API Migration (Supabase Index) ⚡ Claude
-- [x] **T.3** Anchor Coder IDL Parsing 🧠 Thinking
-- [/] **14.1** Smart Contract Test (Bankrun) - 17/30 (57%) ⚡ Claude
-  - [x] **14.1a-d** Setup + P0/P1/P2 Tests (10 tests)
+- [ ] **12.4** Landing Mechanism Polish (Pulse Upgrade) 🎨 Gemini
+- [/] **14.1** Smart Contract Test (Bankrun) - 26/30 (86%) ⚡ Claude
   - [~] **14.1e** Complete P0 Security (2 tests skipped - Bankrun limitations)
-  - [x] **14.1f** Complete P1 Core (2 tests)
-  - [x] **14.1g** Complete P2 Edge (5 tests)
   - [ ] **14.1h** SPL Token Tests (9 tests) - P4
-- [x] **14.2** Unit Testing (Vitest) ⚡ Claude
 - [/] **14.3** Integration Testing (Vault Service spec) ⚡ Claude
 - [ ] **14.4** E2E Test (Playwright) ⚡ Claude
-- [x] **A.2** Add Wizard Error Boundary 🛡️ Opus
+- [ ] **R.3** Refactor `crypto.ts` (Split Primitives/Logic) ⚡ Claude
 
 ---
 
@@ -76,6 +71,6 @@
 
 ## 📈 Progress
 
-**Completed (Cumulative):** 37 tasks ✅
-**Remaining:** 0 P1/P2 tasks, 4 P3/P4 tasks
-**Est. Time:** Ready for verification & video
+**Completed (Hackathon):** 42 tasks ✅
+**Remaining:** 0 P1/P2, 6 P3/P4 tasks
+**Est. Time:** Final Polish
