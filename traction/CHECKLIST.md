@@ -131,9 +131,14 @@
 - [x] 15.2 Gasless Transactions (Paymaster)
 - [ ] 15.3 Account Recovery (v2)
 
-### Phase 16: Code Quality & Architectural Refactor (0%)
-- [ ] 16.1 Functional Hook Extraction
-- [ ] 16.2 UI Component Decomposition
+### Phase 16: Code Quality & Architectural Refactor ✅ 100%
+- [x] 16.1 Functional Hook Extraction
+- [x] 16.2 UI Component Decomposition
+
+### Phase 17: Latency Optimization (Hybrid Shell) ✅ 100%
+- [x] 17.1 Static UI Shell SSR
+- [x] 17.2 Streaming & Skeletons
+- [x] 17.3 Cache & Prefetch Optimization
 
 ---
 
@@ -156,7 +161,8 @@
 | **Phase 12: UX** | ✅ Done | **100%** |
 | Phase 13: Optimization | ✅ Done | **100%** |
 | Phase 15: LazorKit | ✅ Done | 100% |
-| Phase 16: Refactor | 📝 Spec | 0% |
+| Phase 16: Refactor | ✅ Done | 100% |
+| Phase 17: Latency | ✅ Done | 100% |
 
 ---
 

@@ -32,8 +32,8 @@ Current Experience:
 
 | File | Content | Status |
 |------|---------|--------|
-| [16.1-logic-hooks.md](./16.1-logic-hooks.md) | Moving transaction & encryption logic to hooks | 📝 Spec |
-| [16.2-ui-decomposition.md](./16.2-ui-decomposition.md) | Splitting God Components into sub-components | 📝 Spec |
+| [16.1-logic-hooks.md](./16.1-logic-hooks.md) | Moving transaction & encryption logic to hooks | ✅ Done |
+| [16.2-ui-decomposition.md](./16.2-ui-decomposition.md) | Splitting God Components into sub-components | ✅ Done |
 
 ---
 

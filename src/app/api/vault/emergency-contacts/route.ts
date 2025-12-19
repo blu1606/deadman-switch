@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { getSupabaseAdmin } from '@/utils/supabase';
 
 // GET: Fetch emergency contacts for a vault
 export async function GET(req: Request) {
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+        return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+    }
+
     const { searchParams } = new URL(req.url);
     const vaultAddress = searchParams.get('vault');
     const ownerWallet = searchParams.get('owner');
@@ -36,6 +36,11 @@ export async function GET(req: Request) {
 
 // POST: Add emergency contact
 export async function POST(req: Request) {
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+        return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+    }
+
     try {
         const body = await req.json();
         const { vaultAddress, ownerWallet, contactEmail, contactName } = body;
@@ -78,6 +83,11 @@ export async function POST(req: Request) {
 
 // DELETE: Remove emergency contact
 export async function DELETE(req: Request) {
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+        return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+    }
+
     const { searchParams } = new URL(req.url);
     const contactId = searchParams.get('id');
 

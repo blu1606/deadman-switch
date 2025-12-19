@@ -16,10 +16,7 @@ if (typeof window !== 'undefined') {
     });
 }
 
-const Header = dynamic(
-    () => import('@/components/layout/Header'),
-    { ssr: false }
-);
+import Header from '@/components/layout/Header';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono' });

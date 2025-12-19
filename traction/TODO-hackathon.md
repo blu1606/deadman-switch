@@ -18,6 +18,14 @@
 
 ---
 
+### 1. **Phase 17** [ACTIVE] Latency Optimization (Hybrid Shell)
+
+- [x] **17.1** Static UI Shell SSR ✅
+- [x] **17.2** Streaming & Skeleton UI ✅
+- [x] **17.3** Cache & Prefetch Optimization ✅
+
+---
+
 ## 🟡 P3: Polish (If Time)
 
 - [ ] **12.4** Landing Mechanism Polish (Pulse Upgrade) 🎨 Gemini
@@ -35,8 +43,8 @@
 - [ ] **11.3** Key Sharding Demo Improvements (Badge + Real Math) 🛡️ Opus
 - [x] **15.1** Passkey-Native Onboarding (LazorKit) ✅
 - [x] **15.2** Gasless Transactions (Paymaster) ✅
-- [ ] **16.1** Functional Hook Extraction ⚡ Claude
-- [ ] **16.2** UI Component Decomposition 🎨 Gemini
+- [x] **16.1** Functional Hook Extraction ✅
+- [x] **16.2** UI Component Decomposition ✅
 
 ---
 
@@ -75,6 +83,6 @@
 
 ## 📈 Progress
 
-**Completed (Hackathon):** 42 tasks ✅
-**Remaining:** 0 P1/P2, 6 P3/P4 tasks
+**Completed (Hackathon):** 45 tasks ✅
+**Remaining:** 6 Polish tasks
 **Est. Time:** Final Polish
