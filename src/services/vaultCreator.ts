@@ -19,6 +19,8 @@ export interface InitializeVaultParams {
     timeInterval: number;
     vaultName: string;
     lockedSol: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    sendTransaction: (tx: any, connection: Connection) => Promise<string>;
 }
 
 export async function initializeSolanaVault({
@@ -30,7 +32,8 @@ export async function initializeSolanaVault({
     recipientAddress,
     timeInterval,
     vaultName,
-    lockedSol
+    lockedSol,
+    sendTransaction
 }: InitializeVaultParams) {
     const provider = new AnchorProvider(
         connection,
@@ -45,7 +48,7 @@ export async function initializeSolanaVault({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const program = new Program<DeadmansSwitch>(idl as any, provider);
 
-    const tx = await program.methods
+    const transaction = await program.methods
         .initializeVault(
             seed,
             cid,
@@ -61,7 +64,9 @@ export async function initializeSolanaVault({
             owner: wallet.publicKey,
             systemProgram: SystemProgram.programId,
         })
-        .rpc();
+        .transaction();
+
+    const tx = await sendTransaction(transaction, connection);
 
     return { tx, vaultPda };
 }

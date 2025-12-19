@@ -12,7 +12,7 @@ import { indexVault } from '@/services/vault';
 export type CreateStatus = 'idle' | 'uploading' | 'confirming' | 'success' | 'error';
 
 export const useCreateVault = () => {
-    const { publicKey, signTransaction, signAllTransactions } = useWallet();
+    const { publicKey, signTransaction, signAllTransactions, sendTransaction } = useWallet();
     const { connection } = useConnection();
 
     const [status, setStatus] = useState<CreateStatus>('idle');
@@ -96,6 +96,7 @@ export const useCreateVault = () => {
             const { tx, vaultPda } = await initializeSolanaVault({
                 connection,
                 wallet: { publicKey, signTransaction, signAllTransactions },
+                sendTransaction,
                 seed,
                 cid,
                 keyInfo: keyInfo || '',
