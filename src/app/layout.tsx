@@ -12,6 +12,8 @@ const WalletContextProvider = dynamic(
 );
 
 if (typeof window !== 'undefined') {
+    // Polyfill global for libraries that expect it
+    (window as any).global = window;
     import('buffer').then(({ Buffer }) => {
         window.Buffer = window.Buffer || Buffer;
     });
@@ -55,6 +57,16 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans bg-void-black text-signal-white`}>
+                <script
+                    id="polyfill-global"
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                            if (typeof window !== 'undefined' && typeof window.global === 'undefined') {
+                                window.global = window;
+                            }
+                        `
+                    }}
+                />
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{
